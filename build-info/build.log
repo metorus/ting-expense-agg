@@ -1,4 +1,3 @@
-   Compiling ting-expense-a v0.1.0 (/home/tigr/ssh-move/ting-expense-a)
 warning: unused import: `LastInfo`
  --> src/graphics.rs:6:35
   |
@@ -37,4 +36,4 @@ warning: fields `count`, `times`, and `group` are never read
 warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (run `cargo fix --bin "ting-expense-a"` to apply 1 suggestion)
 warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (3 duplicates)
 warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (3 duplicates)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.12s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.24s

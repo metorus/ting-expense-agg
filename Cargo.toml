@@ -34,6 +34,11 @@ headless = ["dep:axum", "dep:axum-extra"]
 graphics = ["dep:eframe", "dep:egui"]
 default  = ["graphics"]
 
+# Remember about
+# Enables parallel processing support by enabling the "rayon" feature of jpeg-decoder.
+#   BUT IF SOMETHING ELSE enables jpeg-decoder itself
+# parallel = ["jpeg-decoder?/rayon"]
+
 
 [dependencies.uuid]
 version = "1.11.0"
