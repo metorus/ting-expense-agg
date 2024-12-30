@@ -1,0 +1,46 @@
+warning: fields `uid` and `principal` are never read
+  --> src/crosstyping.rs:55:9
+   |
+54 | pub struct Metadata<'de> {
+   |            -------- fields in this struct
+55 |     pub uid: Uuid,
+   |         ^^^
+56 |     pub time: LogicalTime,
+57 |     pub principal: Option<Cow<'de, str>>    // None stands for local
+   |         ^^^^^^^^^
+   |
+   = note: `Metadata` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` on by default
+
+warning: fields `total_amount`, `count`, `times`, and `group` are never read
+  --> src/crosstyping.rs:82:9
+   |
+81 | pub struct LastInfo {
+   |            -------- fields in this struct
+82 |     pub total_amount: u64,
+   |         ^^^^^^^^^^^^
+83 |     pub count: usize,
+   |         ^^^^^
+84 |     pub times: Interval,
+   |         ^^^^^
+85 |     pub group: Option<String>,
+   |         ^^^^^
+
+warning: methods `gen_interval_last`, `total_spending_last`, and `insert_expense` are never used
+  --> src/crosstyping.rs:89:8
+   |
+88 | pub trait TunedDb {
+   |           ------- methods in this trait
+89 |     fn gen_interval_last(&mut self, dur: Duration) -> Interval;
+   |        ^^^^^^^^^^^^^^^^^
+...
+92 |     fn total_spending_last(&self, t: Interval, group: Option<&str>) -> LastInfo;
+   |        ^^^^^^^^^^^^^^^^^^^
+93 |     
+94 |     fn insert_expense(&mut self, e: ClientData<'static>) -> Expense<'_>;
+   |        ^^^^^^^^^^^^^^
+
+warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings
+warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (3 duplicates)
+warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (3 duplicates)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
