@@ -19,6 +19,10 @@ edition = "2021"
 # android: to come
 # ios: to come
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = "0.4"
+web-sys = "0.3.70"           # to access the DOM (to hide the loading text)
+
 [dependencies]
 axum = { version = "0.7.3", optional = true }
 axum-extra = { version = "0.9.3", features = ["cookie", "cookie-signed"], optional = true }
