@@ -28,10 +28,12 @@ impl LogicalTime {
         //  increase the generation if needed.
         // Transitivity ensured by deriving `PartialOrd` / `Ord`.
         
+        let last_instant = last_stamp.instant;
+        
         let now = SystemTime::now();
         let gen = last_stamp.generation
-                + if now.duration_since(last_stamp).is_err() {1} else {0};
-        let obj = Self {generation: gen, instant: now}
+                + if now.duration_since(last_instant).is_err() {1} else {0};
+        let obj = Self {generation: gen, instant: now};
         
         debug_assert!(obj >= *last_stamp);
         
@@ -65,7 +67,7 @@ pub struct Expense<'de> {
     pub client: ClientData<'de>
 }
 
-fn to_key(e: &Expense<'_>) -> &LogicalTime {
+fn to_key<'a>(e: &'a Expense<'_>) -> &'a LogicalTime {
     &e.server.time
 }
 
@@ -99,7 +101,9 @@ pub struct FallbackDb {
 impl TunedDb for FallbackDb {
     fn gen_interval_last(&mut self, dur: Duration) -> Interval {
         let now = LogicalTime::now(&mut self.last_marker);
-        
+        let instant = now.instant.checked_sub(dur)
+                                 .unwrap_or(SystemTime::UNIX_EPOCH);
+        (LogicalTime{generation: 0, instant}, now)
     }
     fn gen_server_data(&mut self) -> Metadata<'static> {
         Metadata {
@@ -109,8 +113,8 @@ impl TunedDb for FallbackDb {
         }
     }
     fn total_spending_last(&self, t: Interval, group: Option<&str>) -> LastInfo {
-        let b = self.operations.partition_point(|&op| to_key(op) <= t.1);
-        let a = self.operations[..b].partition_point(|&op| to_key(op) < t.0);
+        let b = self.operations.partition_point(|op| *to_key(&op) <= t.1);
+        let a = self.operations[..b].partition_point(|op| *to_key(&op) < t.0);
         let mut u = 0;
         let mut c = 0;
         for op in &self.operations[a..b] {
@@ -124,11 +128,11 @@ impl TunedDb for FallbackDb {
             total_amount: u,
             count: c,
             times: t,
-            group: group.map(String::to_owned)
+            group: group.map(|s| s.to_owned())
         }
     }
     fn insert_expense(&mut self, c: ClientData<'static>) -> Expense<'_> {
-        let mut s = self.gen_server_data();
+        let s = self.gen_server_data();
         let e = Expense{server: s, client: c};
         self.operations.push(e.clone());
         e
