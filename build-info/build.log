@@ -1,11 +1,4 @@
-warning: unused import: `LastInfo`
- --> src/graphics.rs:6:35
-  |
-6 | use crate::crosstyping::{TunedDb, LastInfo};
-  |                                   ^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default
-
+   Compiling ting-expense-a v0.1.0 (/home/tigr/ssh-move/ting-expense-a)
 warning: fields `uid` and `principal` are never read
   --> src/crosstyping.rs:55:9
    |
@@ -33,7 +26,7 @@ warning: fields `count`, `times`, and `group` are never read
 85 |     pub group: Option<String>,
    |         ^^^^^
 
-warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (run `cargo fix --bin "ting-expense-a"` to apply 1 suggestion)
-warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (3 duplicates)
-warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (3 duplicates)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.24s
+warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings
+warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings (2 duplicates)
+warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings (2 duplicates)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.76s
