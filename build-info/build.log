@@ -1,7 +1,8 @@
+   Compiling ting-expense-a v0.1.0 (/home/tigr/ssh-move/ting-expense-a)
 warning: unused import: `LastInfo`
- --> src/graphics.rs:4:35
+ --> src/graphics.rs:6:35
   |
-4 | use crate::crosstyping::{TunedDb, LastInfo};
+6 | use crate::crosstyping::{TunedDb, LastInfo};
   |                                   ^^^^^^^^
   |
   = note: `#[warn(unused_imports)]` on by default
@@ -20,13 +21,12 @@ warning: fields `uid` and `principal` are never read
    = note: `Metadata` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
    = note: `#[warn(dead_code)]` on by default
 
-warning: fields `total_amount`, `count`, `times`, and `group` are never read
-  --> src/crosstyping.rs:82:9
+warning: fields `count`, `times`, and `group` are never read
+  --> src/crosstyping.rs:83:9
    |
 81 | pub struct LastInfo {
    |            -------- fields in this struct
 82 |     pub total_amount: u64,
-   |         ^^^^^^^^^^^^
 83 |     pub count: usize,
    |         ^^^^^
 84 |     pub times: Interval,
@@ -34,29 +34,7 @@ warning: fields `total_amount`, `count`, `times`, and `group` are never read
 85 |     pub group: Option<String>,
    |         ^^^^^
 
-warning: methods `gen_interval_last`, `total_spending_last`, and `insert_expense` are never used
-  --> src/crosstyping.rs:89:8
-   |
-88 | pub trait TunedDb {
-   |           ------- methods in this trait
-89 |     fn gen_interval_last(&mut self, dur: Duration) -> Interval;
-   |        ^^^^^^^^^^^^^^^^^
-...
-92 |     fn total_spending_last(&self, t: Interval, group: Option<&str>) -> LastInfo;
-   |        ^^^^^^^^^^^^^^^^^^^
-93 |     
-94 |     fn insert_expense(&mut self, e: ClientData<'static>) -> Expense<'_>;
-   |        ^^^^^^^^^^^^^^
-
-warning: field `db` is never read
- --> src/graphics.rs:8:5
-  |
-7 | pub struct Trac<D: TunedDb> {
-  |            ---- field in this struct
-8 |     db: D
-  |     ^^
-
-warning: `ting-expense-a` (bin "ting-expense-a") generated 5 warnings (run `cargo fix --bin "ting-expense-a"` to apply 1 suggestion)
-warning: `ting-expense-a` (bin "ting-expense-a") generated 5 warnings (5 duplicates)
-warning: `ting-expense-a` (bin "ting-expense-a") generated 5 warnings (5 duplicates)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.17s
+warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (run `cargo fix --bin "ting-expense-a"` to apply 1 suggestion)
+warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (3 duplicates)
+warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (3 duplicates)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.12s
