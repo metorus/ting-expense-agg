@@ -1,3 +1,5 @@
+// targets: ALL
+
 use std::time::{Duration, SystemTime};
 use std::borrow::Cow;
 use uuid::Uuid;
@@ -16,7 +18,7 @@ impl LogicalTime {
         Self {generation: 0, instant: SystemTime::UNIX_EPOCH}
     }
     
-    /// Issues a next measurement, incrementing generation number if wall clock
+    /// Issues next measurement, incrementing generation number if wall clock
     /// happened to show an earlier time than previously.
     /// 
     /// Note this will not always detect clock rolling back because the method
@@ -98,12 +100,28 @@ pub struct FallbackDb {
     last_marker: LogicalTime,
     operations:  Vec<Expense<'static>>
 }
+impl Default for FallbackDb {
+    fn default() -> Self {
+        Self {last_marker: LogicalTime::zero(),
+              operations: Vec::with_capacity(128)}
+    }
+}
 impl TunedDb for FallbackDb {
     fn gen_interval_last(&mut self, dur: Duration) -> Interval {
+        //          |=================|
+        //  W->-W---W---W---W
+        //        ,________/
+        //       W---W---W---W
+        //             ,____/
+        //            W---W---W---W---W-->
+        //          |=================|
+        // now, we only select the last branch
+        
         let now = LogicalTime::now(&mut self.last_marker);
         let instant = now.instant.checked_sub(dur)
                                  .unwrap_or(SystemTime::UNIX_EPOCH);
-        (LogicalTime{generation: 0, instant}, now)
+        // TODO: smarter algorithm to select `generation`
+        (LogicalTime{generation: now.generation, instant}, now)
     }
     fn gen_server_data(&mut self) -> Metadata<'static> {
         Metadata {
@@ -112,13 +130,13 @@ impl TunedDb for FallbackDb {
             principal: None
         }
     }
-    fn total_spending_last(&self, t: Interval, group: Option<&str>) -> LastInfo {
+    fn total_spending_last(&self, t: Interval, gr: Option<&str>) -> LastInfo {
         let b = self.operations.partition_point(|op| *to_key(&op) <= t.1);
         let a = self.operations[..b].partition_point(|op| *to_key(&op) < t.0);
         let mut u = 0;
         let mut c = 0;
         for op in &self.operations[a..b] {
-            if let Some(g) = group {
+            if let Some(g) = gr {
                 if op.client.group != Some(g.into()) {continue;}
             }
             c += 1;
@@ -128,7 +146,7 @@ impl TunedDb for FallbackDb {
             total_amount: u,
             count: c,
             times: t,
-            group: group.map(|s| s.to_owned())
+            group: gr.map(|s| s.to_owned())
         }
     }
     fn insert_expense(&mut self, c: ClientData<'static>) -> Expense<'_> {

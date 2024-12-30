@@ -12,3 +12,7 @@ features = [
     "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
 ]
 
+[dependencies.getrandom]
+version = "0.2.15"
+features = ["js"]
+
