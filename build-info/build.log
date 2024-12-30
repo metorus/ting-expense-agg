@@ -1,3 +1,11 @@
+warning: unused import: `LastInfo`
+ --> src/graphics.rs:4:35
+  |
+4 | use crate::crosstyping::{TunedDb, LastInfo};
+  |                                   ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
 warning: fields `uid` and `principal` are never read
   --> src/crosstyping.rs:55:9
    |
@@ -40,7 +48,23 @@ warning: methods `gen_interval_last`, `total_spending_last`, and `insert_expense
 94 |     fn insert_expense(&mut self, e: ClientData<'static>) -> Expense<'_>;
    |        ^^^^^^^^^^^^^^
 
-warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings
-warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (3 duplicates)
-warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (3 duplicates)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+warning: field `db` is never read
+ --> src/graphics.rs:8:5
+  |
+7 | pub struct Trac<D: TunedDb> {
+  |            ---- field in this struct
+8 |     db: D
+  |     ^^
+
+warning: `ting-expense-a` (bin "ting-expense-a") generated 5 warnings (run `cargo fix --bin "ting-expense-a"` to apply 1 suggestion)
+warning: `ting-expense-a` (bin "ting-expense-a") generated 5 warnings (5 duplicates)
+   Compiling ting-expense-a v0.1.0 (/home/tigr/ssh-move/ting-expense-a)
+error[E0601]: `main` function not found in crate `ting_expense_a`
+  --> src/main.rs:32:2
+   |
+32 | }
+   |  ^ consider adding a `main` function to `src/main.rs`
+
+For more information about this error, try `rustc --explain E0601`.
+warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning (1 duplicate)
+error: could not compile `ting-expense-a` (bin "ting-expense-a") due to 1 previous error; 1 warning emitted

@@ -4,6 +4,33 @@ authors = ["Ender Ting <pythonhunter146@gmail.com>"]
 version = "0.1.0"
 edition = "2021"
 
+
+# Five build options, with more to come:
+# 1. x86_64-unknown-linux-gnu +headless
+#     Compiles axum-based server for tracking expenses for Linux target.
+# 2. x86_64-pc-windows-gnu +headless
+#     Compiles axum-based server for tracking expenses for Windows target.
+# 3. wasm32-unknown-unknown
+#     Compiles eframe-based WebAssembly application for browsers, with local DB.
+# 4. x86_64-unknown-linux-gnu
+#     Compiles eframe-based native application for Linux target, with local DB.
+# 5. x86_64-pc-windows-gnu
+#     Compiles eframe-based native application for Windows target, with local DB.
+# android: to come
+# ios: to come
+
+[dependencies]
+axum = { version = "0.7.3", optional = true }
+axum-extra = { version = "0.9.3", features = ["cookie", "cookie-signed"], optional = true }
+eframe = { version = "0.30.0", features = ["accesskit", "default_fonts", "glow", "persistence", "wayland"], optional = true }
+egui = { version = "0.30.0", optional = true }
+
+[features]
+headless = ["dep:axum", "dep:axum-extra"]
+graphics = ["dep:eframe", "dep:egui"]
+default  = ["graphics"]
+
+
 [dependencies.uuid]
 version = "1.11.0"
 features = [
