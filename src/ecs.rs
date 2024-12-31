@@ -94,6 +94,18 @@ pub fn expense_category_slider(ui: &mut Ui, pos: &mut f32, held: &mut usize,
         );
     }
     
+//----------------------------------------------------------------------------//
+    // SECTION 2: Tooltips.
+    ui.horizontal_top(|ui| {
+        ui.add_space(6.0);
+        ui.spacing_mut().item_spacing.x = segment - 6.0 / nf;
+        ui.columns(n, |uis| {
+            for (ui, (name, c)) in uis.into_iter().zip(options) {
+                ui.label(RichText::new(*name).color(*c).size(18.0));
+            }
+        });
+    });
+    
     re
 }
 //----------------------------------------------------------------------------//

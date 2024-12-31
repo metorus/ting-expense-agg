@@ -69,10 +69,11 @@ impl<D: TunedDb> App for Trac<D> where
                     expense_category_slider(&mut ui, &mut self.form_anim_category,
                         &mut self.form_chosen_category,
                         &[
-                            ("Food", Color32::GREEN),
-                            ("Supplies", Color32::DARK_GRAY),
-                            ("Transport", Color32::ORANGE),
-                            ("sel", Color32::BLACK)
+                            ("🍞", Color32::GREEN),
+                            ("🏡", Color32::DARK_GRAY),
+                            ("🚋", Color32::ORANGE),
+                            ("etc", Color32::GOLD),
+                            ("📝", Color32::BLACK)
                         ]);
                     
                     ui.add(widgets::TextEdit::multiline(&mut self.form_comment)
