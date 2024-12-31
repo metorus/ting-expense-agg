@@ -3,8 +3,8 @@ use eframe::{App, CreationContext};
 
 use std::collections::BTreeMap;
 
+use crate::ecs::expense_category_slider;
 use crate::crosstyping::TunedDb;
-
 
 
 pub struct Trac<D: TunedDb> {
@@ -12,6 +12,8 @@ pub struct Trac<D: TunedDb> {
     
     form_spent: u64,
     form_comment: String,
+    form_anim_category: f32,
+    form_chosen_category: usize,
 }
 impl<D: TunedDb + Default> Trac<D> {
     pub fn new(cc: &CreationContext<'_>) -> Self {
@@ -33,6 +35,8 @@ impl<D: TunedDb + Default> Trac<D> {
             db: Default::default(),
             form_spent: 0,
             form_comment: String::with_capacity(24),
+            form_anim_category: 0.0,
+            form_chosen_category: 0,
         }
     }
 }
@@ -53,7 +57,7 @@ impl<D: TunedDb> App for Trac<D> where
                 let bigness = (self.form_spent as f32).ln_1p();  // 0.00 .. 11.52
                 let drag_speed = 12.0 - bigness;
                 
-                ui.vertical_centered_justified(|ui| {
+                ui.vertical_centered_justified(|mut ui| {
                     ui.spacing_mut().interact_size.y += 12.0;
                     ui.spacing_mut().item_spacing.y += 12.0;
                     
@@ -62,7 +66,14 @@ impl<D: TunedDb> App for Trac<D> where
                         .speed(drag_speed)
                         .prefix("Spent: "));
                     
-                    // TODO: smart expense-category slider.
+                    expense_category_slider(&mut ui, &mut self.form_anim_category,
+                        &mut self.form_chosen_category,
+                        &[
+                            ("Food", Color32::GREEN),
+                            ("Supplies", Color32::DARK_GRAY),
+                            ("Transport", Color32::ORANGE),
+                            ("sel", Color32::BLACK)
+                        ]);
                     
                     ui.add(widgets::TextEdit::multiline(&mut self.form_comment)
                         .desired_rows(2)

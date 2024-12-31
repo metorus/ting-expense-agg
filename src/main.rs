@@ -1,5 +1,6 @@
-mod crosstyping;
 #[cfg(feature = "graphics")] mod graphics;
+#[cfg(feature = "graphics")] mod ecs;
+mod crosstyping;
 
 
 #[cfg(all(feature = "graphics", not(target_arch = "wasm32")))]
