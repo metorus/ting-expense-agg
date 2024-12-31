@@ -1,14 +1,4 @@
    Compiling ting-expense-a v0.1.0 (/home/tigr/ssh-move/ting-expense-a)
-warning: variable does not need to be mutable
-  --> src/ecs.rs:25:23
-   |
-25 |     let (slider_rect, mut re) = ui.allocate_exact_size(sl_size,
-   |                       ----^^
-   |                       |
-   |                       help: remove this `mut`
-   |
-   = note: `#[warn(unused_mut)]` on by default
-
 warning: field `principal` is never read
   --> src/crosstyping.rs:61:9
    |
@@ -21,7 +11,7 @@ warning: field `principal` is never read
    = note: `Metadata` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
    = note: `#[warn(dead_code)]` on by default
 
-warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings (run `cargo fix --bin "ting-expense-a"` to apply 1 suggestion)
-warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings (2 duplicates)
-warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings (2 duplicates)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.37s
+warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning
+warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning (1 duplicate)
+warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning (1 duplicate)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.89s
