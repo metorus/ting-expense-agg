@@ -36,7 +36,8 @@ impl<D: TunedDb + Default> Trac<D> {
         }
     }
 }
-impl<D: TunedDb> App for Trac<D> {
+impl<D: TunedDb> App for Trac<D> where
+        std::ops::Range<<D as TunedDb>::Er>: DoubleEndedIterator<Item=<D as TunedDb>::Er> {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         TopBottomPanel::bottom("status_bar")
             .min_height(48.0)
@@ -82,13 +83,11 @@ impl<D: TunedDb> App for Trac<D> {
                 });
             });
         
-        // const MONTH = std::time::Duration::from_days(30);
-        #[allow(non_snake_case)] // until `duration_constructors` stabilize
-        let MONTH = std::time::Duration::from_secs(30 * 86400);
-        
-        let latest_meaning = self.db.gen_interval_last(MONTH);
-        let latest_info = self.db.total_spending_last(latest_meaning, None);
+        let latest_meaning = self.db.gen_interval_last(crate::crosstyping::MONTH_LIKE);
+        let latest_info = self.db.aggregate(latest_meaning, None);
         let latte = latest_info.total_amount;
+        let latc = latest_info.count;
+        let (a, b) = latest_info.bound;
         
         CentralPanel::default()
             .frame(Frame::side_top_panel(&ctx.style()).inner_margin(Margin::same(30.0)))
@@ -96,6 +95,16 @@ impl<D: TunedDb> App for Trac<D> {
                 ui.vertical_centered_justified(|ui| {
                     ui.spacing_mut().item_spacing.y += 12.0;
                     ui.heading(format!("Spending amount this month: {latte}"));
+                    if latc != 0 {
+                        ui.label(format!("in {latc} purchases ({:.2} on average)",
+                            (latte as f32) / (latc as f32)));
+                    }
+                    ui.add_space(12.0);
+                    
+                    for i in (a..b).rev().take(10) {
+                        let expense = self.db.load(i);
+                        ui.monospace(format!("{expense}"));
+                    }
                 });
             });
     }

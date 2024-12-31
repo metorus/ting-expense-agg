@@ -1,6 +1,7 @@
 // targets: ALL
 
-use std::time::{Duration, SystemTime};
+use time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339};
+
 use std::borrow::Cow;
 use uuid::Uuid;
 
@@ -10,12 +11,14 @@ use uuid::Uuid;
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LogicalTime {
     pub generation: u32,
-    pub instant:    SystemTime
+    pub instant:    OffsetDateTime
 }
 impl LogicalTime {
     /// Returns a reference-zero time point.
+    /// It might not be the smallest time representable by chosen type but all
+    /// measurements will point past that moment.
     fn zero() -> Self {
-        Self {generation: 0, instant: SystemTime::UNIX_EPOCH}
+        Self {generation: 0, instant: OffsetDateTime::UNIX_EPOCH}
     }
     
     /// Issues next measurement, incrementing generation number if wall clock
@@ -32,9 +35,9 @@ impl LogicalTime {
         
         let last_instant = last_stamp.instant;
         
-        let now = SystemTime::now();
-        let gen = last_stamp.generation
-                + if now.duration_since(last_instant).is_err() {1} else {0};
+        let now = OffsetDateTime::now_local().unwrap()
+                                 .replace_nanosecond(0).unwrap();
+        let gen = last_stamp.generation + if now < last_instant {1} else {0};
         let obj = Self {generation: gen, instant: now};
         
         debug_assert!(obj >= *last_stamp);
@@ -45,6 +48,7 @@ impl LogicalTime {
 
 pub type Interval = (LogicalTime, LogicalTime);
 
+pub const MONTH_LIKE: Duration = Duration::days(30);
 
 //----------------------------------------------------------------------------//
 /// Server-generated information about a certain expense.
@@ -69,6 +73,18 @@ pub struct Expense<'de> {
     pub client: ClientData<'de>
 }
 
+impl<'de> std::fmt::Display for Expense<'de> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:04X} - [{}]{} - {}P on {}",
+            self.server.uid.as_fields().0,
+            self.server.time.generation,
+            self.server.time.instant.format(&Rfc3339).unwrap(),
+            self.client.amount,
+            self.client.group.as_ref().map_or("something", |cow| cow.as_ref())
+        )
+    }
+}
+
 fn to_key<'a>(e: &'a Expense<'_>) -> &'a LogicalTime {
     &e.server.time
 }
@@ -78,20 +94,21 @@ fn to_key<'a>(e: &'a Expense<'_>) -> &'a LogicalTime {
 // Our operations fundamentally don't include principals interaction. Therefore,
 // we can model all of those as separate - and possibly locally stored.
 
-pub struct LastInfo {
+pub struct LastInfo<EntryRef: Clone> {
     pub total_amount: u64,
     pub count: usize,
-    pub times: Interval,
-    pub group: Option<String>,
+    pub bound: (EntryRef, EntryRef),
 }
 
 pub trait TunedDb {
+    type Er: Clone;
+    
     fn gen_interval_last(&mut self, dur: Duration) -> Interval;
     fn gen_server_data(&mut self) -> Metadata<'static>;
     
-    fn total_spending_last(&self, t: Interval, group: Option<&str>) -> LastInfo;
-    
-    fn insert_expense(&mut self, e: ClientData<'static>) -> Expense<'_>;
+    fn aggregate(&self, t: Interval, group: Option<&str>) -> LastInfo<Self::Er>;
+    fn insert_expense(&mut self, e: ClientData<'static>) -> Self::Er;
+    fn load(&self, entry_ref: Self::Er) -> &Expense<'_>;
 }
 
 
@@ -107,6 +124,8 @@ impl Default for FallbackDb {
     }
 }
 impl TunedDb for FallbackDb {
+    type Er = usize;
+    
     fn gen_interval_last(&mut self, dur: Duration) -> Interval {
         //          |=================|
         //  W->-W---W---W---W
@@ -119,7 +138,7 @@ impl TunedDb for FallbackDb {
         
         let now = LogicalTime::now(&mut self.last_marker);
         let instant = now.instant.checked_sub(dur)
-                                 .unwrap_or(SystemTime::UNIX_EPOCH);
+                                 .unwrap_or(OffsetDateTime::UNIX_EPOCH);
         // TODO: smarter algorithm to select `generation`
         (LogicalTime{generation: now.generation, instant}, now)
     }
@@ -130,13 +149,13 @@ impl TunedDb for FallbackDb {
             principal: None
         }
     }
-    fn total_spending_last(&self, t: Interval, gr: Option<&str>) -> LastInfo {
+    fn aggregate(&self, t: Interval, group: Option<&str>) -> LastInfo<usize> {
         let b = self.operations.partition_point(|op| *to_key(&op) <= t.1);
         let a = self.operations[..b].partition_point(|op| *to_key(&op) < t.0);
         let mut u = 0;
         let mut c = 0;
         for op in &self.operations[a..b] {
-            if let Some(g) = gr {
+            if let Some(g) = group {
                 if op.client.group != Some(g.into()) {continue;}
             }
             c += 1;
@@ -145,15 +164,17 @@ impl TunedDb for FallbackDb {
         LastInfo {
             total_amount: u,
             count: c,
-            times: t,
-            group: gr.map(|s| s.to_owned())
+            bound: (a, b),
         }
     }
-    fn insert_expense(&mut self, c: ClientData<'static>) -> Expense<'_> {
+    fn insert_expense(&mut self, c: ClientData<'static>) -> Self::Er {
         let s = self.gen_server_data();
         let e = Expense{server: s, client: c};
-        self.operations.push(e.clone());
-        e
+        self.operations.push(e);
+        self.operations.len() - 1
+    }
+    fn load(&self, i: usize) -> &Expense<'_> {
+        &self.operations[i]
     }
 }
 

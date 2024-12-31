@@ -1,32 +1,17 @@
    Compiling ting-expense-a v0.1.0 (/home/tigr/ssh-move/ting-expense-a)
-warning: fields `uid` and `principal` are never read
-  --> src/crosstyping.rs:55:9
+warning: field `principal` is never read
+  --> src/crosstyping.rs:61:9
    |
-54 | pub struct Metadata<'de> {
-   |            -------- fields in this struct
-55 |     pub uid: Uuid,
-   |         ^^^
-56 |     pub time: LogicalTime,
-57 |     pub principal: Option<Cow<'de, str>>    // None stands for local
+58 | pub struct Metadata<'de> {
+   |            -------- field in this struct
+...
+61 |     pub principal: Option<Cow<'de, str>>    // None stands for local
    |         ^^^^^^^^^
    |
    = note: `Metadata` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
    = note: `#[warn(dead_code)]` on by default
 
-warning: fields `count`, `times`, and `group` are never read
-  --> src/crosstyping.rs:83:9
-   |
-81 | pub struct LastInfo {
-   |            -------- fields in this struct
-82 |     pub total_amount: u64,
-83 |     pub count: usize,
-   |         ^^^^^
-84 |     pub times: Interval,
-   |         ^^^^^
-85 |     pub group: Option<String>,
-   |         ^^^^^
-
-warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings
-warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings (2 duplicates)
-warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings (2 duplicates)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.76s
+warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning
+warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning (1 duplicate)
+warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning (1 duplicate)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.16s
