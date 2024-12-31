@@ -7,6 +7,15 @@ use crate::ecs::expense_category_slider;
 use crate::crosstyping::TunedDb;
 
 
+const CATEGORIES: [(&'static str, Color32, Option<&'static str>); 5] = [
+    ("🍞", Color32::GREEN,     Some("food")),
+    ("🏡", Color32::DARK_GRAY, Some("supplies")),
+    ("🚋", Color32::ORANGE,    Some("transport")),
+    ("etc", Color32::GOLD,     None),
+    ("📝", Color32::BLACK,     None),
+];
+
+
 pub struct Trac<D: TunedDb> {
     db: D,
     
@@ -35,8 +44,8 @@ impl<D: TunedDb + Default> Trac<D> {
             db: Default::default(),
             form_spent: 0,
             form_comment: String::with_capacity(24),
-            form_anim_category: 0.0,
-            form_chosen_category: 0,
+            form_anim_category: 3.0,
+            form_chosen_category: 3,
         }
     }
 }
@@ -67,14 +76,7 @@ impl<D: TunedDb> App for Trac<D> where
                         .prefix("Spent: "));
                     
                     expense_category_slider(&mut ui, &mut self.form_anim_category,
-                        &mut self.form_chosen_category,
-                        &[
-                            ("🍞", Color32::GREEN),
-                            ("🏡", Color32::DARK_GRAY),
-                            ("🚋", Color32::ORANGE),
-                            ("etc", Color32::GOLD),
-                            ("📝", Color32::BLACK)
-                        ]);
+                        &mut self.form_chosen_category, &CATEGORIES);
                     
                     ui.add(widgets::TextEdit::multiline(&mut self.form_comment)
                         .desired_rows(2)
@@ -87,10 +89,13 @@ impl<D: TunedDb> App for Trac<D> where
                     if ui.add(spent).clicked() {
                         self.db.insert_expense(crate::crosstyping::ClientData{
                             amount: self.form_spent,
-                            group: None
+                            group: CATEGORIES[self.form_chosen_category].2.map(|s| s.into())
                         });
+                        
                         self.form_spent = 0;
                         self.form_comment.clear();
+                        self.form_anim_category = 3.0;
+                        self.form_chosen_category = 3;
                     }
                 });
             });

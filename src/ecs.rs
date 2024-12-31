@@ -11,8 +11,8 @@ use egui::*;
 const NO_STROKE: (f32, Color32) = (0.0, Color32::PLACEHOLDER);
 const WHITE: Color32 = Color32::WHITE;
 
-pub fn expense_category_slider(ui: &mut Ui, pos: &mut f32, held: &mut usize,
-        options: &[(&str, Color32)]) -> Response {
+pub fn expense_category_slider<T>(ui: &mut Ui, pos: &mut f32, held: &mut usize,
+        options: &[(&str, Color32, T)]) -> Response {
     
     let n = options.len();
     let nf = n as f32;
@@ -100,7 +100,7 @@ pub fn expense_category_slider(ui: &mut Ui, pos: &mut f32, held: &mut usize,
         ui.add_space(6.0);
         ui.spacing_mut().item_spacing.x = segment - 6.0 / nf;
         ui.columns(n, |uis| {
-            for (ui, (name, c)) in uis.into_iter().zip(options) {
+            for (ui, (name, c, _)) in uis.into_iter().zip(options) {
                 ui.label(RichText::new(*name).color(*c).size(18.0));
             }
         });
