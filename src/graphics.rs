@@ -23,6 +23,7 @@ pub struct Trac<D: TunedDb> {
     form_comment: String,
     form_anim_category: f32,
     form_chosen_category: usize,
+    form_spec_category: String,
 }
 impl<D: TunedDb + Default> Trac<D> {
     pub fn new(cc: &CreationContext<'_>) -> Self {
@@ -34,7 +35,7 @@ impl<D: TunedDb + Default> Trac<D> {
             (Name("Heading2".into()), FontId::new(25.0, Proportional)),
             (Name("Context".into()), FontId::new(23.0, Proportional)),
             (Body, FontId::new(16.0, Proportional)),
-            (Monospace, FontId::new(16.0, Proportional)),
+            (Monospace, FontId::new(14.0, FontFamily::Monospace)),
             (Button, FontId::new(16.0, Proportional)),
             (Small, FontId::new(15.0, Proportional)),
         ].into();
@@ -46,6 +47,7 @@ impl<D: TunedDb + Default> Trac<D> {
             form_comment: String::with_capacity(24),
             form_anim_category: 3.0,
             form_chosen_category: 3,
+            form_spec_category: String::with_capacity(12),
         }
     }
 }
@@ -78,6 +80,12 @@ impl<D: TunedDb> App for Trac<D> where
                     expense_category_slider(&mut ui, &mut self.form_anim_category,
                         &mut self.form_chosen_category, &CATEGORIES);
                     
+                    CollapsingHeader::new("Specific category")
+                        .open(Some(self.form_anim_category == 4.0))
+                        .show(ui, |ui| {
+                            ui.text_edit_singleline(&mut self.form_spec_category);
+                        });
+                    
                     ui.add(widgets::TextEdit::multiline(&mut self.form_comment)
                         .desired_rows(2)
                         .hint_text("Comment"));
@@ -87,15 +95,22 @@ impl<D: TunedDb> App for Trac<D> where
                     let spent = RichText::new("Spent").size(19.0).strong().color(Color32::DARK_BLUE);
                     let spent = Button::new(spent).fill(Color32::LIGHT_BLUE);
                     if ui.add(spent).clicked() {
+                        let c = if self.form_chosen_category == 4 {
+                            Some(std::mem::take(&mut self.form_spec_category).into())
+                        } else {
+                            CATEGORIES[self.form_chosen_category].2.map(|s| s.into())
+                        };
+                        
                         self.db.insert_expense(crate::crosstyping::ClientData{
                             amount: self.form_spent,
-                            group: CATEGORIES[self.form_chosen_category].2.map(|s| s.into())
+                            group: c
                         });
                         
                         self.form_spent = 0;
                         self.form_comment.clear();
                         self.form_anim_category = 3.0;
                         self.form_chosen_category = 3;
+                        self.form_spec_category.clear();
                     }
                 });
             });
@@ -118,7 +133,7 @@ impl<D: TunedDb> App for Trac<D> where
                     }
                     ui.add_space(12.0);
                     
-                    for i in (a..b).rev().take(10) {
+                    for i in (a..b).rev().take(6) {
                         let expense = self.db.load(i);
                         ui.monospace(format!("{expense}"));
                     }
