@@ -75,7 +75,7 @@ pub struct Expense<'de> {
 
 impl<'de> std::fmt::Display for Expense<'de> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:04X} - [{}]{} - {}P on {}",
+        write!(f, "{:08X} - [{}]{} - {}P on {}",
             self.server.uid.as_fields().0,
             self.server.time.generation,
             self.server.time.instant.format(&Rfc3339).unwrap(),
@@ -88,6 +88,9 @@ impl<'de> std::fmt::Display for Expense<'de> {
 fn to_key<'a>(e: &'a Expense<'_>) -> &'a LogicalTime {
     &e.server.time
 }
+
+fn principal_match(expense: &Option<Cow<'_, str>>, our: &Option<Cow<'_, str>>)
+    -> bool { expense.is_none() || expense == our }
 
 
 //----------------------------------------------------------------------------//
@@ -158,6 +161,7 @@ impl TunedDb for FallbackDb {
             if let Some(g) = group {
                 if op.client.group != Some(g.into()) {continue;}
             }
+            if !principal_match(&op.server.principal, &None) {continue;}
             c += 1;
             u += op.client.amount;
         }
