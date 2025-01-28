@@ -67,8 +67,11 @@ impl<D: TunedDb> App for Trac<D> where
         match self.screen_buf.pop() {
             None => unreachable!(),
             Some(CurScreen::Main(mut form)) => {
-                self.draw_main_screen(ctx, &mut form);
+                let cmd = self.draw_main_screen(ctx, &mut form);
                 self.screen_buf.push(CurScreen::Main(form));
+                if let Some(s) = cmd {
+                    self.screen_buf.push(s);
+                }
             }
             Some(CurScreen::Stats) => todo!(),
         }
@@ -78,15 +81,7 @@ impl<D: TunedDb> App for Trac<D> where
 impl<D: TunedDb> Trac<D> where
         std::ops::Range<<D as TunedDb>::Er>: DoubleEndedIterator<Item=<D as TunedDb>::Er> {
     
-    fn go(&mut self, screen: CurScreen) {
-        self.screen_buf.push(screen);
-    }
-    fn back(&mut self) {
-        assert!(self.screen_buf.len() > 1, "cannot go back from main screen");
-        self.screen_buf.pop();
-    }
-    
-    fn draw_main_screen(&mut self, ctx: &Context, form: &mut MainForm) {
+    fn draw_main_screen(&mut self, ctx: &Context, form: &mut MainForm) -> Option<CurScreen> {
         TopBottomPanel::bottom("status_bar")
             .min_height(48.0)
             .show(ctx, |ui| {
@@ -168,7 +163,7 @@ impl<D: TunedDb> Trac<D> where
                         ui.label(format!("in {latc} purchases ({:.2} on average);",
                             (latte as f32) / (latc as f32)));
                         if ui.button("Detailed statistics").clicked() {
-                            self.go(CurScreen::Stats);
+                            return Some(CurScreen::Stats);
                         }
                     }
                     ui.add_space(12.0);
@@ -179,6 +174,7 @@ impl<D: TunedDb> Trac<D> where
                     }
                 });
             });
+        None
     }
 }
 
