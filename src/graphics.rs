@@ -16,14 +16,22 @@ const CATEGORIES: [(&'static str, Color32, Option<&'static str>); 5] = [
 ];
 
 
+struct MainForm {
+    spent: u64,
+    comment: String,
+    anim_category: f32,
+    chosen_category: usize,
+    spec_category: String,
+}
+enum CurScreen {
+    Main(MainForm),
+    Stats,
+}
+
+
 pub struct Trac<D: TunedDb> {
     db: D,
-    
-    form_spent: u64,
-    form_comment: String,
-    form_anim_category: f32,
-    form_chosen_category: usize,
-    form_spec_category: String,
+    screen_buf: Vec<CurScreen>,
 }
 impl<D: TunedDb + Default> Trac<D> {
     pub fn new(cc: &CreationContext<'_>) -> Self {
@@ -43,17 +51,42 @@ impl<D: TunedDb + Default> Trac<D> {
         
         Trac {
             db: Default::default(),
-            form_spent: 0,
-            form_comment: String::with_capacity(24),
-            form_anim_category: 3.0,
-            form_chosen_category: 3,
-            form_spec_category: String::with_capacity(12),
+            screen_buf: vec![CurScreen::Main(MainForm{
+                spent: 0,
+                comment: String::with_capacity(24),
+                anim_category: 3.0,
+                chosen_category: 3,
+                spec_category: String::with_capacity(12),
+            })],
         }
     }
 }
 impl<D: TunedDb> App for Trac<D> where
         std::ops::Range<<D as TunedDb>::Er>: DoubleEndedIterator<Item=<D as TunedDb>::Er> {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        match self.screen_buf.pop() {
+            None => unreachable!(),
+            Some(CurScreen::Main(mut form)) => {
+                self.draw_main_screen(ctx, &mut form);
+                self.screen_buf.push(CurScreen::Main(form));
+            }
+            Some(CurScreen::Stats) => todo!(),
+        }
+    }
+}
+
+impl<D: TunedDb> Trac<D> where
+        std::ops::Range<<D as TunedDb>::Er>: DoubleEndedIterator<Item=<D as TunedDb>::Er> {
+    
+    fn go(&mut self, screen: CurScreen) {
+        self.screen_buf.push(screen);
+    }
+    fn back(&mut self) {
+        assert!(self.screen_buf.len() > 1, "cannot go back from main screen");
+        self.screen_buf.pop();
+    }
+    
+    fn draw_main_screen(&mut self, ctx: &Context, form: &mut MainForm) {
         TopBottomPanel::bottom("status_bar")
             .min_height(48.0)
             .show(ctx, |ui| {
@@ -65,52 +98,56 @@ impl<D: TunedDb> App for Trac<D> where
         TopBottomPanel::bottom("track")
             .frame(Frame::side_top_panel(&ctx.style()).inner_margin(Margin::same(18.0)))
             .show(ctx, |ui| {
-                let bigness = (self.form_spent as f32).ln_1p();  // 0.00 .. 11.52
+                let bigness = (form.spent as f32).ln_1p();  // 0.00 .. 11.52
                 let drag_speed = 12.0 - bigness;
                 
                 ui.vertical_centered_justified(|mut ui| {
                     ui.spacing_mut().interact_size.y += 12.0;
                     ui.spacing_mut().item_spacing.y += 12.0;
                     
-                    ui.add(widgets::DragValue::new(&mut self.form_spent)
+                    ui.add(widgets::DragValue::new(&mut form.spent)
                         .range(0..=100000)
                         .speed(drag_speed)
                         .prefix("Spent: "));
                     
-                    expense_category_slider(&mut ui, &mut self.form_anim_category,
-                        &mut self.form_chosen_category, &CATEGORIES);
+                    expense_category_slider(&mut ui, &mut form.anim_category,
+                        &mut form.chosen_category, &CATEGORIES);
                     
+                    let write_in_cat = form.anim_category == 4.0;
                     CollapsingHeader::new("Specific category")
-                        .open(Some(self.form_anim_category == 4.0))
+                        .open(Some(write_in_cat))
                         .show(ui, |ui| {
-                            ui.text_edit_singleline(&mut self.form_spec_category);
+                            ui.add_space(3.0);
+                            ui.text_edit_singleline(&mut form.spec_category);
+                            ui.add_space(1.0);
                         });
                     
-                    ui.add(widgets::TextEdit::multiline(&mut self.form_comment)
+                    ui.add(widgets::TextEdit::multiline(&mut form.comment)
                         .desired_rows(2)
                         .hint_text("Comment"));
                     
-                    if self.form_spent == 0 {ui.disable();}
+                    if form.spent == 0 {ui.disable();}
+                    if write_in_cat && form.spec_category.is_empty() {ui.disable();}
                     
                     let spent = RichText::new("Spent").size(19.0).strong().color(Color32::DARK_BLUE);
                     let spent = Button::new(spent).fill(Color32::LIGHT_BLUE);
                     if ui.add(spent).clicked() {
-                        let c = if self.form_chosen_category == 4 {
-                            Some(std::mem::take(&mut self.form_spec_category).into())
+                        let c = if form.chosen_category == 4 {
+                            Some(std::mem::take(&mut form.spec_category).into())
                         } else {
-                            CATEGORIES[self.form_chosen_category].2.map(|s| s.into())
+                            CATEGORIES[form.chosen_category].2.map(|s| s.into())
                         };
                         
                         self.db.insert_expense(crate::crosstyping::ClientData{
-                            amount: self.form_spent,
+                            amount: form.spent,
                             group: c
                         });
                         
-                        self.form_spent = 0;
-                        self.form_comment.clear();
-                        self.form_anim_category = 3.0;
-                        self.form_chosen_category = 3;
-                        self.form_spec_category.clear();
+                        form.spent = 0;
+                        form.comment.clear();
+                        form.anim_category = 3.0;
+                        form.chosen_category = 3;
+                        form.spec_category.clear();
                     }
                 });
             });
@@ -122,14 +159,17 @@ impl<D: TunedDb> App for Trac<D> where
         let (a, b) = latest_info.bound;
         
         CentralPanel::default()
-            .frame(Frame::side_top_panel(&ctx.style()).inner_margin(Margin::same(30.0)))
+            .frame(Frame::side_top_panel(&ctx.style()).inner_margin(Margin::symmetric(2.0, 30.0)))
             .show(ctx, |ui| {
-                ui.vertical_centered_justified(|ui| {
+                ui.vertical_centered(|ui| {
                     ui.spacing_mut().item_spacing.y += 12.0;
                     ui.heading(format!("Spending amount this month: {latte}"));
                     if latc != 0 {
-                        ui.label(format!("in {latc} purchases ({:.2} on average)",
+                        ui.label(format!("in {latc} purchases ({:.2} on average);",
                             (latte as f32) / (latc as f32)));
+                        if ui.button("Detailed statistics").clicked() {
+                            self.go(CurScreen::Stats);
+                        }
                     }
                     ui.add_space(12.0);
                     

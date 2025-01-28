@@ -1,1 +1,17 @@
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.65s
+   Compiling ting-expense-a v0.1.0 (/home/tigr/ssh-move/ting-expense-a)
+warning: method `back` is never used
+  --> src/graphics.rs:84:8
+   |
+78 | / impl<D: TunedDb> Trac<D> where
+79 | |         std::ops::Range<<D as TunedDb>::Er>: DoubleEndedIterator<Item=<D as TunedDb>::Er> {
+   | |_________________________________________________________________________________________- method in this implementation
+...
+84 |       fn back(&mut self) {
+   |          ^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning
+warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning (1 duplicate)
+warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning (1 duplicate)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.19s
