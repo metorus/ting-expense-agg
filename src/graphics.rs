@@ -2,12 +2,11 @@ use egui::{*, FontFamily::Proportional, FontId};
 use eframe::{App, CreationContext};
 
 use std::collections::BTreeMap;
-use std::ops::Deref;
 
+use crate::crosstyping::{ClientData, Upstream};
 use crate::db_client_view::{DbView, MayLoad};
 use crate::ecs::expense_category_slider;
 use crate::pie::pie_chart_with_legend;
-use crate::crosstyping::ClientData;
 
 
 const CATEGORIES: [(&'static str, Color32, Option<&'static str>); 5] = [
@@ -29,7 +28,7 @@ fn color_cat(a: &str) -> Color32 {
 
 fn show_mayload(ui: &mut Ui, ml: MayLoad<'_>) {
     match ml {
-        Ok(e)   => ui.monospace(e.to_string()),
+        Ok(e)   => ui.monospace(e.1.to_string()),
         Err(()) => ui.monospace("------------------------------"),
     };
 }
@@ -42,6 +41,28 @@ struct MainForm {
     chosen_category: usize,
     spec_category: String,
 }
+impl MainForm {
+    fn to_default(&mut self) {
+        self.spent = 0;
+        self.comment.clear();
+        self.anim_category = 3.0;
+        self.chosen_category = 3;
+        self.spec_category.clear();
+    }
+}
+impl Default for MainForm {
+    fn default() -> Self {
+        MainForm {
+            spent: 0,
+            comment: String::with_capacity(24),
+            anim_category: 3.0,
+            chosen_category: 3,
+            spec_category: String::with_capacity(12),
+        }
+    }
+}
+
+
 enum CurScreen {
     Main(MainForm),
     Stats,
@@ -53,12 +74,12 @@ enum UiCommands {
 }
 
 
-pub struct Trac<U> {
+pub struct Trac<U: Upstream> {
     db: DbView<U>,
     screen_buf: Vec<CurScreen>,
 }
-impl<U> Trac<U> where DbView<U>: Default {
-    pub fn new(cc: &CreationContext<'_>) -> Self {
+impl<U: Upstream> Trac<U> {
+    pub fn new(cc: &CreationContext<'_>, db: U) -> Self {
         cc.egui_ctx.set_theme(Theme::Light);
         
         use egui::TextStyle::*;
@@ -74,52 +95,11 @@ impl<U> Trac<U> where DbView<U>: Default {
         cc.egui_ctx.all_styles_mut(move |style| style.text_styles = text_styles.clone());
         
         Trac {
-            db: Default::default(),
-            screen_buf: vec![CurScreen::Main(MainForm{
-                spent: 0,
-                comment: String::with_capacity(24),
-                anim_category: 3.0,
-                chosen_category: 3,
-                spec_category: String::with_capacity(12),
-            })],
+            db: DbView::with(db),
+            screen_buf: vec![CurScreen::Main(MainForm::default())],
         }
     }
-}
-
-impl<U> App for Trac<U> {
-    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        // We can't enable double mutability on last-screen place,
-        //     but we need &mut App (or to reference all OK fields separately),
-        //     so we have to pop that screen out of buffer.
-        let commands = match self.screen_buf.pop() {
-            None => unreachable!(),
-            Some(CurScreen::Main(mut form)) => {
-                 let c = self.draw_main_screen(ctx, &mut form);
-                 self.screen_buf.push(CurScreen::Main(form));
-                 c
-            }
-            Some(CurScreen::Stats) => {
-                 let c = self.draw_stat_screen(ctx);
-                 self.screen_buf.push(CurScreen::Stats);
-                 c
-            }
-        };
-        
-        for c in commands {
-            match c {
-                UiCommands::Go(to) => {
-                    self.screen_buf.push(to);
-                },
-                UiCommands::Back => {
-                    assert!(self.screen_buf.len() > 1, "no screens to go back");
-                    self.screen_buf.pop();
-                }
-            }
-        }
-    }
-}
-
-impl<U> Trac<U> {
+    
     fn draw_main_screen(&mut self, ctx: &Context, form: &mut MainForm) -> Vec<UiCommands> {
         let mut cmds = vec![];
         
@@ -162,9 +142,12 @@ impl<U> Trac<U> {
                         .hint_text("Comment"));
                     
                     if form.spent == 0 {ui.disable();}
-                    if write_in_cat && form.spec_category.is_empty() {ui.disable();}
+                    if write_in_cat && form.spec_category.is_empty() {
+                        ui.disable();
+                    }
                     
-                    let spent = RichText::new("Spent").size(19.0).strong().color(Color32::DARK_BLUE);
+                    let spent = RichText::new("Spent").size(19.0)
+                                         .strong().color(Color32::DARK_BLUE);
                     let spent = Button::new(spent).fill(Color32::LIGHT_BLUE);
                     if ui.add(spent).clicked() {
                         let c = if form.chosen_category == 4 {
@@ -178,12 +161,7 @@ impl<U> Trac<U> {
                             group: c,
                             revoked: false,
                         });
-                        
-                        form.spent = 0;
-                        form.comment.clear();
-                        form.anim_category = 3.0;
-                        form.chosen_category = 3;
-                        form.spec_category.clear();
+                        form.to_default();
                     }
                 });
             });
@@ -265,6 +243,39 @@ impl<U> Trac<U> {
             });
         
         cmds
+    }
+}
+
+impl<U: Upstream> App for Trac<U> {
+    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        // We can't enable double mutability on last-screen place,
+        //     but we need &mut App (or to reference all OK fields separately),
+        //     so we have to pop that screen out of buffer.
+        let commands = match self.screen_buf.pop() {
+            None => unreachable!(),
+            Some(CurScreen::Main(mut form)) => {
+                 let c = self.draw_main_screen(ctx, &mut form);
+                 self.screen_buf.push(CurScreen::Main(form));
+                 c
+            }
+            Some(CurScreen::Stats) => {
+                 let c = self.draw_stat_screen(ctx);
+                 self.screen_buf.push(CurScreen::Stats);
+                 c
+            }
+        };
+        
+        for c in commands {
+            match c {
+                UiCommands::Go(to) => {
+                    self.screen_buf.push(to);
+                },
+                UiCommands::Back => {
+                    assert!(self.screen_buf.len() > 1, "no screens to go back");
+                    self.screen_buf.pop();
+                }
+            }
+        }
     }
 }
 

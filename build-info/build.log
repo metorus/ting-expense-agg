@@ -1,70 +1,32 @@
    Compiling ting-expense-a v0.1.0 (/home/tigr/ssh-move/ting-expense-a)
-warning: unused import: `std::ops::Deref`
- --> src/graphics.rs:5:5
-  |
-5 | use std::ops::Deref;
-  |     ^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default
-
 warning: unused variable: `text_height`
-   --> src/graphics.rs:253:25
+   --> src/graphics.rs:231:25
     |
-253 |                     let text_height = ui.fonts(|r| r.row_height(&font));
+231 |                     let text_height = ui.fonts(|r| r.row_height(&font));
     |                         ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_text_height`
     |
     = note: `#[warn(unused_variables)]` on by default
 
-warning: method `revoke` is never used
-  --> src/db_client_view.rs:44:12
+warning: type alias `Interval` is never used
+  --> src/crosstyping.rs:49:10
    |
-19 | impl CachedStats {
-   | ---------------- method in this implementation
-...
-44 |     pub fn revoke(&mut self, unspent: (&str, u64, usize)) {
-   |            ^^^^^^
+49 | pub type Interval = (LogicalTime, LogicalTime);
+   |          ^^^^^^^^
    |
    = note: `#[warn(dead_code)]` on by default
 
-warning: field `upstream` is never read
-   --> src/db_client_view.rs:101:5
-    |
-100 | pub struct DbView<U> {
-    |            ------ field in this struct
-101 |     upstream: U,
-    |     ^^^^^^^^
-
-warning: fields `total_amount`, `count`, and `bound` are never read
-   --> src/crosstyping.rs:105:9
-    |
-104 | pub struct LastInfo<EntryRef: Clone> {
-    |            -------- fields in this struct
-105 |     pub total_amount: u64,
-    |         ^^^^^^^^^^^^
-106 |     pub count: usize,
-    |         ^^^^^
-107 |     pub bound: (EntryRef, EntryRef),
-    |         ^^^^^
-
-warning: methods `gen_interval_last`, `aggregate`, `insert_expense`, `load`, and `revoke` are never used
-   --> src/crosstyping.rs:113:8
-    |
-110 | pub trait TunedDb {
-    |           ------- methods in this trait
+warning: field `principal` is never read
+  --> src/crosstyping.rs:61:9
+   |
+58 | pub struct Metadata<'de> {
+   |            -------- field in this struct
 ...
-113 |     fn gen_interval_last(&mut self, dur: Duration) -> Interval;
-    |        ^^^^^^^^^^^^^^^^^
-...
-116 |     fn aggregate(&self, t: Interval, group: Option<&str>) -> LastInfo<Self::Er>;
-    |        ^^^^^^^^^
-117 |     fn insert_expense(&mut self, e: ClientData<'static>) -> Self::Er;
-    |        ^^^^^^^^^^^^^^
-118 |     fn load(&self, entry_ref: Self::Er) -> &Expense<'_>;
-    |        ^^^^
-119 |     fn revoke(&mut self, i: usize);
-    |        ^^^^^^
+61 |     pub principal: Option<Cow<'de, str>>    // None stands for local
+   |         ^^^^^^^^^
+   |
+   = note: `Metadata` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
 
-warning: `ting-expense-a` (bin "ting-expense-a") generated 6 warnings (run `cargo fix --bin "ting-expense-a"` to apply 1 suggestion)
-warning: `ting-expense-a` (bin "ting-expense-a") generated 6 warnings (6 duplicates)
-warning: `ting-expense-a` (bin "ting-expense-a") generated 6 warnings (6 duplicates)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.33s
+warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings
+warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (3 duplicates)
+warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (3 duplicates)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.20s

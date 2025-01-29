@@ -5,14 +5,20 @@
 mod crosstyping;
 
 
+#[cfg(feature = "graphics")]
+type Db = crosstyping::PseudoUpstream;
+
+
 #[cfg(all(feature = "graphics", not(target_arch = "wasm32")))]
 fn main() -> eframe::Result {
+    let icon = include_bytes!("../assets/icon-32.png");
+    
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([700.0, 600.0])
             .with_min_inner_size([600.0, 540.0])
             .with_icon(
-                eframe::icon_data::from_png_bytes(&include_bytes!("../assets/icon-32.png")[..])
+                eframe::icon_data::from_png_bytes(&icon[..])
                     .expect("Failed to load icon"),
             )
             ,
@@ -22,7 +28,7 @@ fn main() -> eframe::Result {
         "Expense Explorer",
         native_options,
         Box::new(|cc| Ok(Box::new(
-            graphics::Trac::<crosstyping::FallbackDb>::new(cc)
+            graphics::Trac::<Db>::new(cc, Db::default())
         ))),
     )
 }
@@ -49,7 +55,7 @@ fn main() {
                 canvas,
                 web_options,
                 Box::new(|cc| Ok(Box::new(
-                    graphics::Trac::<crosstyping::FallbackDb>::new(cc)
+                    graphics::Trac::<Db>::new(cc, Db::default())
                 ))),
             )
             .await;
@@ -62,7 +68,7 @@ fn main() {
                 }
                 Err(e) => {
                     loading_text.set_inner_html(
-                        "<p> The app has crashed. See the developer console for details. </p>",
+                        "<p> App crashed, see details in console. </p>",
                     );
                     panic!("Failed to start eframe: {e:?}");
                 }

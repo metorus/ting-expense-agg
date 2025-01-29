@@ -89,107 +89,62 @@ impl<'de> std::fmt::Display for Expense<'de> {
     }
 }
 
-fn to_key<'a>(e: &'a Expense<'_>) -> &'a LogicalTime {
-    &e.server.time
-}
-
-fn principal_match(expense: &Option<Cow<'_, str>>, our: &Option<Cow<'_, str>>)
-    -> bool { expense.is_none() || expense == our }
-
-
 //----------------------------------------------------------------------------//
-// Our operations fundamentally don't include principals interaction. Therefore,
-// we can model all of those as separate - and possibly locally stored.
 
-pub struct LastInfo<EntryRef: Clone> {
-    pub total_amount: u64,
-    pub count: usize,
-    pub bound: (EntryRef, EntryRef),
+pub enum UpstreamMessage {
+    Revoked{total_id: usize, asked_here: bool},
+    NewSpending{expense: Expense<'static>, asked_id: Option<usize>,
+                true_id: usize},
 }
 
-pub trait TunedDb {
-    type Er: Clone;
-    
-    fn gen_interval_last(&mut self, dur: Duration) -> Interval;
-    fn gen_server_data(&mut self) -> Metadata<'static>;
-    
-    fn aggregate(&self, t: Interval, group: Option<&str>) -> LastInfo<Self::Er>;
-    fn insert_expense(&mut self, e: ClientData<'static>) -> Self::Er;
-    fn load(&self, entry_ref: Self::Er) -> &Expense<'_>;
-    fn revoke(&mut self, i: usize);
-    
-    // fn load_grouped(&self, bound: (Er, Er)) -> &[(String, u64)];
+pub trait Upstream {
+    fn submit_expense(&mut self, d: ClientData<'static>, provisional_id: usize);
+    fn submit_revoke(&mut self, total_id: usize);
+    fn sync(&mut self) -> Vec<UpstreamMessage>;
 }
 
 
-
-pub struct FallbackDb {
+pub struct PseudoUpstream {
+    uncommitted_expenses: Vec<(ClientData<'static>, usize)>,
+    uncommitted_revokes: Vec<usize>,
     last_marker: LogicalTime,
-    operations:  Vec<Expense<'static>>,
 }
-impl Default for FallbackDb {
+impl Default for PseudoUpstream {
     fn default() -> Self {
-        Self {last_marker: LogicalTime::zero(),
-              operations: Vec::with_capacity(128)}
+        Self {
+            uncommitted_expenses: Vec::with_capacity(1),
+            uncommitted_revokes: vec![],
+            last_marker: LogicalTime::zero(),
+        }
     }
 }
-impl TunedDb for FallbackDb {
-    type Er = usize;
-    
-    fn gen_interval_last(&mut self, dur: Duration) -> Interval {
-        //          |=================|
-        //  W->-W---W---W---W
-        //        ,________/
-        //       W---W---W---W
-        //             ,____/
-        //            W---W---W---W---W-->
-        //          |=================|
-        // now, we only select the last branch
-        
-        let now = LogicalTime::now(&mut self.last_marker);
-        let instant = now.instant.checked_sub(dur)
-                                 .unwrap_or(OffsetDateTime::UNIX_EPOCH);
-        // TODO: smarter algorithm to select `generation`
-        (LogicalTime{generation: now.generation, instant}, now)
+impl Upstream for PseudoUpstream {
+    fn submit_expense(&mut self, d: ClientData<'static>, asked_id: usize) {
+        self.uncommitted_expenses.push((d, asked_id));
     }
-    fn gen_server_data(&mut self) -> Metadata<'static> {
-        Metadata {
-            uid: Uuid::new_v4(),
-            time: LogicalTime::now(&mut self.last_marker),
-            principal: None
+    fn submit_revoke(&mut self, total_id: usize) {
+        self.uncommitted_revokes.push(total_id);
+    }
+    fn sync(&mut self) -> Vec<UpstreamMessage> {
+        let mut v = Vec::with_capacity(self.uncommitted_expenses.len() +
+                                   self.uncommitted_revokes.len());
+        for (client, asked_id) in self.uncommitted_expenses.drain(..) {
+            let server = Metadata {
+                uid: Uuid::new_v4(),
+                time: LogicalTime::now(&mut self.last_marker),
+                principal: None
+            };
+            let expense = Expense{server, client};
+            v.push(UpstreamMessage::NewSpending{
+                expense,
+                asked_id: Some(asked_id),
+                true_id: asked_id
+            });
         }
-    }
-    fn aggregate(&self, t: Interval, group: Option<&str>) -> LastInfo<usize> {
-        let b = self.operations.partition_point(|op| *to_key(&op) <= t.1);
-        let a = self.operations[..b].partition_point(|op| *to_key(&op) < t.0);
-        let mut u = 0;
-        let mut c = 0;
-        for op in &self.operations[a..b] {
-            if op.client.revoked {continue;}
-            if let Some(g) = group {
-                if op.client.group != Some(g.into()) {continue;}
-            }
-            if !principal_match(&op.server.principal, &None) {continue;}
-            c += 1;
-            u += op.client.amount;
-        }
-        LastInfo {
-            total_amount: u,
-            count: c,
-            bound: (a, b),
-        }
-    }
-    fn insert_expense(&mut self, c: ClientData<'static>) -> Self::Er {
-        let s = self.gen_server_data();
-        let e = Expense{server: s, client: c};
-        self.operations.push(e);
-        self.operations.len() - 1
-    }
-    fn load(&self, i: usize) -> &Expense<'_> {
-        &self.operations[i]
-    }
-    fn revoke(&mut self, i: usize) {
-        self.operations[i].client.revoked = true;
+        v.extend(self.uncommitted_revokes.drain(..)
+                     .map(|i| UpstreamMessage::Revoked{total_id: i,
+                                                       asked_here: true}));
+        v
     }
 }
 
