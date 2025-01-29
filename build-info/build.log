@@ -1,16 +1,16 @@
    Compiling ting-expense-a v0.1.0 (/home/tigr/ssh-move/ting-expense-a)
-warning: variant `Back` is never constructed
-  --> src/graphics.rs:33:5
-   |
-31 | enum UiCommands {
-   |      ---------- variant in this enum
-32 |     Go(CurScreen),
-33 |     Back,
-   |     ^^^^
-   |
-   = note: `#[warn(dead_code)]` on by default
+warning: method `revoke` is never used
+   --> src/crosstyping.rs:119:8
+    |
+110 | pub trait TunedDb {
+    |           ------- method in this trait
+...
+119 |     fn revoke(&mut self, i: usize);
+    |        ^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
 
 warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning
 warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning (1 duplicate)
 warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning (1 duplicate)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.02s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.52s

@@ -2,8 +2,10 @@ use egui::{*, FontFamily::Proportional, FontId};
 use eframe::{App, CreationContext};
 
 use std::collections::BTreeMap;
+use std::ops::Deref;
 
 use crate::ecs::expense_category_slider;
+use crate::pie::pie_chart_with_legend;
 use crate::crosstyping::TunedDb;
 
 
@@ -14,6 +16,14 @@ const CATEGORIES: [(&'static str, Color32, Option<&'static str>); 5] = [
     ("etc", Color32::GOLD,     None),
     ("📝", Color32::BLACK,     None),
 ];
+fn color_cat(a: &str) -> Color32 {
+    match a {
+        "food"      => Color32::GREEN,
+        "supplies"  => Color32::DARK_GRAY,
+        "transport" => Color32::ORANGE,
+        _           => Color32::GOLD,
+    }
+}
 
 
 struct MainForm {
@@ -66,8 +76,12 @@ impl<D: TunedDb + Default> Trac<D> {
         }
     }
 }
+
+/*
 impl<D: TunedDb> App for Trac<D> where
         std::ops::Range<<D as TunedDb>::Er>: DoubleEndedIterator<Item=<D as TunedDb>::Er> {
+*/
+impl<D: TunedDb<Er=usize>> App for Trac<D> {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         // We can't enable double mutability on last-screen place,
         //     but we need &mut App (or to reference all OK fields separately),
@@ -79,7 +93,11 @@ impl<D: TunedDb> App for Trac<D> where
                  self.screen_buf.push(CurScreen::Main(form));
                  c
             }
-            Some(CurScreen::Stats) => todo!(),
+            Some(CurScreen::Stats) => {
+                 let c = self.draw_stat_screen(ctx);
+                 self.screen_buf.push(CurScreen::Stats);
+                 c
+            }
         };
         
         for c in commands {
@@ -155,7 +173,8 @@ impl<D: TunedDb> Trac<D> where
                         
                         self.db.insert_expense(crate::crosstyping::ClientData{
                             amount: form.spent,
-                            group: c
+                            group: c,
+                            revoked: false,
                         });
                         
                         form.spent = 0;
@@ -192,6 +211,78 @@ impl<D: TunedDb> Trac<D> where
                         let expense = self.db.load(i);
                         ui.monospace(format!("{expense}"));
                     }
+                });
+            });
+        
+        cmds
+    }
+    
+    fn draw_stat_screen(&mut self, ctx: &Context) -> Vec<UiCommands>
+            where D: TunedDb<Er=usize> {
+        let mut cmds = vec![];
+        
+        TopBottomPanel::bottom("status_bar")
+            .min_height(48.0)
+            .show(ctx, |ui| {
+                ui.horizontal_centered(|ui| {
+                    ui.label("Expense Explorer by House Ting | Debug Version | Stat");
+                });
+            });
+        
+        let latest_meaning = self.db.gen_interval_last(crate::crosstyping::MONTH_LIKE);
+        let latest_info = self.db.aggregate(latest_meaning, None);
+        let (a, b) = latest_info.bound;
+        
+        CentralPanel::default()
+            .frame(Frame::side_top_panel(&ctx.style()).inner_margin(Margin::same(18.0)))
+            .show(ctx, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.spacing_mut().item_spacing.y += 12.0;
+                    
+                    if ui.button("Back").clicked() {
+                        cmds.push(UiCommands::Back);
+                    }
+                    
+                    // 1. displaying aggregate
+                    
+                    let mut m = BTreeMap::new();
+                    m.insert("unclassified".to_owned(), 0);
+                    
+                    for i in (a..b).rev() {
+                        let expense = self.db.load(i);
+                        
+                        if let Some(ref group) = expense.client.group {
+                            if let Some(r) = m.get_mut(group.deref()) {
+                                *r += expense.client.amount;
+                            } else {
+                                m.insert(group.clone().into_owned(),
+                                         expense.client.amount);
+                            }
+                        } else {
+                            *m.get_mut("unclassified").unwrap()
+                                += expense.client.amount;
+                        }
+                    }
+                    
+                    let aggregate: Vec<_> = m.iter()
+                        .map(|(group, amt): (&String, &u64)|
+                             (group.as_str(), *amt as f32, color_cat(&group)))
+                        .collect();
+                    
+                    pie_chart_with_legend(ui, aggregate.as_slice());
+                    
+                    // 2. displaying spendings
+                    
+                    let font = FontId::default();
+                    let text_height = ui.fonts(|r| r.row_height(&font));
+                    
+                    ScrollArea::vertical().show_rows(ui, text_height, b-a,
+                        |ui, row_range| {
+                            for row in row_range {
+                                let expense = self.db.load(row);
+                                ui.monospace(format!("{expense}"));
+                            }
+                        });
                 });
             });
         

@@ -64,7 +64,8 @@ pub struct Metadata<'de> {
 #[derive(Clone)]
 pub struct ClientData<'de> {
     pub amount: u64,
-    pub group: Option<Cow<'de, str>>
+    pub group: Option<Cow<'de, str>>,
+    pub revoked: bool,
 }
 
 #[derive(Clone)]
@@ -75,6 +76,9 @@ pub struct Expense<'de> {
 
 impl<'de> std::fmt::Display for Expense<'de> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.client.revoked {
+            return Err(std::fmt::Error);
+        }
         write!(f, "{:08X} - [{}]{} - {}P on {}",
             self.server.uid.as_fields().0,
             self.server.time.generation,
@@ -112,6 +116,7 @@ pub trait TunedDb {
     fn aggregate(&self, t: Interval, group: Option<&str>) -> LastInfo<Self::Er>;
     fn insert_expense(&mut self, e: ClientData<'static>) -> Self::Er;
     fn load(&self, entry_ref: Self::Er) -> &Expense<'_>;
+    fn revoke(&mut self, i: usize);
 }
 
 
@@ -158,6 +163,7 @@ impl TunedDb for FallbackDb {
         let mut u = 0;
         let mut c = 0;
         for op in &self.operations[a..b] {
+            if op.client.revoked {continue;}
             if let Some(g) = group {
                 if op.client.group != Some(g.into()) {continue;}
             }
@@ -179,6 +185,9 @@ impl TunedDb for FallbackDb {
     }
     fn load(&self, i: usize) -> &Expense<'_> {
         &self.operations[i]
+    }
+    fn revoke(&mut self, i: usize) {
+        self.operations[i].client.revoked = true;
     }
 }
 
