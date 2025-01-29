@@ -117,13 +117,15 @@ pub trait TunedDb {
     fn insert_expense(&mut self, e: ClientData<'static>) -> Self::Er;
     fn load(&self, entry_ref: Self::Er) -> &Expense<'_>;
     fn revoke(&mut self, i: usize);
+    
+    // fn load_grouped(&self, bound: (Er, Er)) -> &[(String, u64)];
 }
 
 
 
 pub struct FallbackDb {
     last_marker: LogicalTime,
-    operations:  Vec<Expense<'static>>
+    operations:  Vec<Expense<'static>>,
 }
 impl Default for FallbackDb {
     fn default() -> Self {

@@ -13,4 +13,4 @@ warning: method `revoke` is never used
 warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning
 warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning (1 duplicate)
 warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning (1 duplicate)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.52s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.97s
