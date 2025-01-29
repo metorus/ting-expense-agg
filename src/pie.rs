@@ -13,7 +13,8 @@ use std::f32::consts::TAU;
 ///     ("Category C", 20.0, Color32::GREEN),
 /// ];
 /// ```
-pub fn pie_chart_with_legend(ui: &mut Ui, data: &[(&str, f32, Color32)]) -> Response {
+pub fn pie_chart_with_legend<'a, D>(ui: &mut Ui, data: D) -> Response
+        where D: Clone, D: Iterator<Item=(&'a String, f32, Color32)> {
     let desired_pie_size = Vec2::splat(120.0);
     let legend_width = 160.0;
     let x_spacing = ui.spacing().item_spacing.x;
@@ -30,7 +31,7 @@ pub fn pie_chart_with_legend(ui: &mut Ui, data: &[(&str, f32, Color32)]) -> Resp
             Vec2::new(legend_width, desired_pie_size.y),
         );
 
-        draw_pie_chart(&painter, pie_rect, data);
+        draw_pie_chart(&painter, pie_rect, data.clone());
         draw_legend(&painter, legend_rect, data, ui);
     }
 
@@ -38,11 +39,12 @@ pub fn pie_chart_with_legend(ui: &mut Ui, data: &[(&str, f32, Color32)]) -> Resp
 }
 
 
-fn draw_pie_chart(painter: &Painter, rect: Rect, data: &[(&str, f32, Color32)]) {
+fn draw_pie_chart<'a, D>(painter: &Painter, rect: Rect, data: D)
+        where D: Clone, D: Iterator<Item=(&'a String, f32, Color32)> {
     let center = rect.center();
     let radius = rect.width().min(rect.height()) / 2.0;
 
-    let total_value: f32 = data.iter().map(|(_, value, _)| value).sum();
+    let total_value: f32 = data.clone().map(|(_, value, _)| value).sum();
     if total_value <= 0.0 {
         return;  // Don't draw corrupt or absent data.
     }
@@ -52,11 +54,11 @@ fn draw_pie_chart(painter: &Painter, rect: Rect, data: &[(&str, f32, Color32)]) 
 //----------------------------------------------------------------------------//
     // SECTION 1: Workaround for poor epaint tesselator functionality.
     let mut top_color = None;
-    for (_, value, color) in data {
+    for (_, value, color) in data.clone() {
         if value / total_value > 0.5 {top_color = Some(color);}
     }
     if let Some(top_color) = top_color {  // Explained below (*).
-        painter.circle(center, radius, *top_color,
+        painter.circle(center, radius, top_color,
                                        Stroke::new(2.0, Color32::WHITE));
     }
     
@@ -99,7 +101,7 @@ fn draw_pie_chart(painter: &Painter, rect: Rect, data: &[(&str, f32, Color32)]) 
 
         // Draw the prepared pie slice
         painter.add(Shape::convex_polygon(
-            points, *color, Stroke::new(2.0, Color32::WHITE)
+            points, color, Stroke::new(2.0, Color32::WHITE)
         ));
 
         start_angle = end_angle;
@@ -107,7 +109,8 @@ fn draw_pie_chart(painter: &Painter, rect: Rect, data: &[(&str, f32, Color32)]) 
 }
 
 
-fn draw_legend(painter: &Painter, rect: Rect, data: &[(&str, f32, Color32)], ui: &Ui) {
+fn draw_legend<'a, D>(painter: &Painter, rect: Rect, data: D, ui: &Ui)
+        where D: Iterator<Item=(&'a String, f32, Color32)> {
     let text_height = ui.fonts(|r| r.row_height(&FontId::default()));
     let color_box_size = Vec2::splat(text_height * 0.8);
     let x_spacing = ui.spacing().item_spacing.x;
@@ -119,7 +122,7 @@ fn draw_legend(painter: &Painter, rect: Rect, data: &[(&str, f32, Color32)], ui:
     for (label, _, color) in data {
         // Color box showing how we displayed that category,
         let color_rect = Rect::from_min_size(current_pos, color_box_size);
-        painter.rect_filled(color_rect, Rounding::same(0.0), *color);
+        painter.rect_filled(color_rect, Rounding::same(0.0), color);
 
         // and the category label.
         let text_pos = Pos2::new(

@@ -4,9 +4,10 @@ use eframe::{App, CreationContext};
 use std::collections::BTreeMap;
 use std::ops::Deref;
 
+use crate::db_client_view::{DbView, MayLoad};
 use crate::ecs::expense_category_slider;
 use crate::pie::pie_chart_with_legend;
-use crate::crosstyping::TunedDb;
+use crate::crosstyping::ClientData;
 
 
 const CATEGORIES: [(&'static str, Color32, Option<&'static str>); 5] = [
@@ -23,6 +24,14 @@ fn color_cat(a: &str) -> Color32 {
         "transport" => Color32::ORANGE,
         _           => Color32::GOLD,
     }
+}
+
+
+fn show_mayload(ui: &mut Ui, ml: MayLoad<'_>) {
+    match ml {
+        Ok(e)   => ui.monospace(e.to_string()),
+        Err(()) => ui.monospace("------------------------------"),
+    };
 }
 
 
@@ -44,11 +53,11 @@ enum UiCommands {
 }
 
 
-pub struct Trac<D: TunedDb> {
-    db: D,
+pub struct Trac<U> {
+    db: DbView<U>,
     screen_buf: Vec<CurScreen>,
 }
-impl<D: TunedDb + Default> Trac<D> {
+impl<U> Trac<U> where DbView<U>: Default {
     pub fn new(cc: &CreationContext<'_>) -> Self {
         cc.egui_ctx.set_theme(Theme::Light);
         
@@ -77,11 +86,7 @@ impl<D: TunedDb + Default> Trac<D> {
     }
 }
 
-/*
-impl<D: TunedDb> App for Trac<D> where
-        std::ops::Range<<D as TunedDb>::Er>: DoubleEndedIterator<Item=<D as TunedDb>::Er> {
-*/
-impl<D: TunedDb<Er=usize>> App for Trac<D> {
+impl<U> App for Trac<U> {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         // We can't enable double mutability on last-screen place,
         //     but we need &mut App (or to reference all OK fields separately),
@@ -106,7 +111,7 @@ impl<D: TunedDb<Er=usize>> App for Trac<D> {
                     self.screen_buf.push(to);
                 },
                 UiCommands::Back => {
-                    assert!(self.screen_buf.len() > 1, "cannot go back from main screen");
+                    assert!(self.screen_buf.len() > 1, "no screens to go back");
                     self.screen_buf.pop();
                 }
             }
@@ -114,9 +119,7 @@ impl<D: TunedDb<Er=usize>> App for Trac<D> {
     }
 }
 
-impl<D: TunedDb> Trac<D> where
-        std::ops::Range<<D as TunedDb>::Er>: DoubleEndedIterator<Item=<D as TunedDb>::Er> {
-    
+impl<U> Trac<U> {
     fn draw_main_screen(&mut self, ctx: &Context, form: &mut MainForm) -> Vec<UiCommands> {
         let mut cmds = vec![];
         
@@ -129,7 +132,8 @@ impl<D: TunedDb> Trac<D> where
             });
         
         TopBottomPanel::bottom("track")
-            .frame(Frame::side_top_panel(&ctx.style()).inner_margin(Margin::same(18.0)))
+            .frame(Frame::side_top_panel(&ctx.style())
+                         .inner_margin(Margin::same(18.0)))
             .show(ctx, |ui| {
                 let bigness = (form.spent as f32).ln_1p();  // 0.00 .. 11.52
                 let drag_speed = 12.0 - bigness;
@@ -150,9 +154,7 @@ impl<D: TunedDb> Trac<D> where
                     CollapsingHeader::new("Specific category")
                         .open(Some(write_in_cat))
                         .show(ui, |ui| {
-                            ui.add_space(3.0);
                             ui.text_edit_singleline(&mut form.spec_category);
-                            ui.add_space(1.0);
                         });
                     
                     ui.add(widgets::TextEdit::multiline(&mut form.comment)
@@ -171,7 +173,7 @@ impl<D: TunedDb> Trac<D> where
                             CATEGORIES[form.chosen_category].2.map(|s| s.into())
                         };
                         
-                        self.db.insert_expense(crate::crosstyping::ClientData{
+                        self.db.insert_expense(ClientData{
                             amount: form.spent,
                             group: c,
                             revoked: false,
@@ -186,55 +188,47 @@ impl<D: TunedDb> Trac<D> where
                 });
             });
         
-        let latest_meaning = self.db.gen_interval_last(crate::crosstyping::MONTH_LIKE);
-        let latest_info = self.db.aggregate(latest_meaning, None);
-        let latte = latest_info.total_amount;
-        let latc = latest_info.count;
-        let (a, b) = latest_info.bound;
+        let (latte, latc) = self.db.month_transactions_info();
         
         CentralPanel::default()
-            .frame(Frame::side_top_panel(&ctx.style()).inner_margin(Margin::symmetric(2.0, 30.0)))
+            .frame(Frame::side_top_panel(&ctx.style())
+                         .inner_margin(Margin::symmetric(2.0, 30.0)))
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.spacing_mut().item_spacing.y += 12.0;
                     ui.heading(format!("Spending amount this month: {latte}"));
-                    if latc != 0 {
-                        ui.label(format!("in {latc} purchases ({:.2} on average);",
-                            (latte as f32) / (latc as f32)));
-                        if ui.button("Detailed statistics").clicked() {
-                            cmds.push(UiCommands::Go(CurScreen::Stats));
-                        }
+                    if latc == 0 { return; }
+                    
+                    ui.label(format!("in {latc} purchases ({:.2} on average);",
+                                     (latte as f32) / (latc as f32)));
+                    if ui.button("Detailed statistics").clicked() {
+                        cmds.push(UiCommands::Go(CurScreen::Stats));
                     }
                     ui.add_space(12.0);
                     
-                    for i in (a..b).rev().take(6) {
-                        let expense = self.db.load(i);
-                        ui.monospace(format!("{expense}"));
-                    }
+                    self.db.load_last_spendings(6)
+                           .for_each(|ml| show_mayload(ui, ml));
                 });
             });
         
         cmds
     }
     
-    fn draw_stat_screen(&mut self, ctx: &Context) -> Vec<UiCommands>
-            where D: TunedDb<Er=usize> {
+    fn draw_stat_screen(&mut self, ctx: &Context) -> Vec<UiCommands> {
         let mut cmds = vec![];
         
         TopBottomPanel::bottom("status_bar")
             .min_height(48.0)
             .show(ctx, |ui| {
                 ui.horizontal_centered(|ui| {
-                    ui.label("Expense Explorer by House Ting | Debug Version | Stat");
+                    ui.label("Expense Explorer by House Ting | Debug Version");
                 });
             });
         
-        let latest_meaning = self.db.gen_interval_last(crate::crosstyping::MONTH_LIKE);
-        let latest_info = self.db.aggregate(latest_meaning, None);
-        let (a, b) = latest_info.bound;
         
         CentralPanel::default()
-            .frame(Frame::side_top_panel(&ctx.style()).inner_margin(Margin::same(18.0)))
+            .frame(Frame::side_top_panel(&ctx.style())
+                         .inner_margin(Margin::same(18.0)))
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.spacing_mut().item_spacing.y += 12.0;
@@ -245,37 +239,20 @@ impl<D: TunedDb> Trac<D> where
                     
                     // 1. displaying aggregate
                     
-                    let mut m = BTreeMap::new();
-                    m.insert("unclassified".to_owned(), 0);
-                    
-                    for i in (a..b).rev() {
-                        let expense = self.db.load(i);
-                        
-                        if let Some(ref group) = expense.client.group {
-                            if let Some(r) = m.get_mut(group.deref()) {
-                                *r += expense.client.amount;
-                            } else {
-                                m.insert(group.clone().into_owned(),
-                                         expense.client.amount);
-                            }
-                        } else {
-                            *m.get_mut("unclassified").unwrap()
-                                += expense.client.amount;
-                        }
-                    }
-                    
-                    let aggregate: Vec<_> = m.iter()
-                        .map(|(group, amt): (&String, &u64)|
-                             (group.as_str(), *amt as f32, color_cat(&group)))
-                        .collect();
-                    
-                    pie_chart_with_legend(ui, aggregate.as_slice());
+                    pie_chart_with_legend(
+                        ui,
+                        self.db.month_pie().into_iter()
+                               .map(|(group, value)| {
+                                   (group, *value as f32, color_cat(&group))
+                               })
+                    );
                     
                     // 2. displaying spendings
                     
                     let font = FontId::default();
                     let text_height = ui.fonts(|r| r.row_height(&font));
                     
+                    /*
                     ScrollArea::vertical().show_rows(ui, text_height, b-a,
                         |ui, row_range| {
                             for row in row_range {
@@ -283,6 +260,7 @@ impl<D: TunedDb> Trac<D> where
                                 ui.monospace(format!("{expense}"));
                             }
                         });
+                    */
                 });
             });
         

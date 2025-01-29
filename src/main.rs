@@ -1,3 +1,4 @@
+#[cfg(feature = "graphics")] mod db_client_view;
 #[cfg(feature = "graphics")] mod graphics;
 #[cfg(feature = "graphics")] mod ecs;
 #[cfg(feature = "graphics")] mod pie;
