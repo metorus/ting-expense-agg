@@ -8,6 +8,7 @@ use uuid::Uuid;
 
 //----------------------------------------------------------------------------//
 /// Monotonic time measurements in form useful for external entities.
+/// It seems to be only relevant for server side, so TODO: consider refactoring.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LogicalTime {
     pub generation: u32,
@@ -46,8 +47,6 @@ impl LogicalTime {
     }
 }
 
-pub type Interval = (LogicalTime, LogicalTime);
-
 pub const MONTH_LIKE: Duration = Duration::days(30);
 
 //----------------------------------------------------------------------------//
@@ -58,6 +57,8 @@ pub const MONTH_LIKE: Duration = Duration::days(30);
 pub struct Metadata<'de> {
     pub uid: Uuid,
     pub time: LogicalTime,
+    
+    #[expect(dead_code, reason="until server is introduced, why read?")]
     pub principal: Option<Cow<'de, str>>    // None stands for local
 }
 
