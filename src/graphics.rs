@@ -26,6 +26,8 @@ fn color_cat(a: &str) -> Color32 {
 }
 
 
+/// Creates a representation of given Ok(expense) or Err(fact that it's not
+/// loaded yet) on given ui, using single widget.
 fn show_mayload(ui: &mut Ui, ml: MayLoad<'_>) {
     match ml {
         Ok(e)   => ui.monospace(e.1.to_string()),
@@ -107,7 +109,7 @@ impl<U: Upstream> Trac<U> {
             .min_height(48.0)
             .show(ctx, |ui| {
                 ui.horizontal_centered(|ui| {
-                    ui.label("Expense Explorer by House Ting | Debug Version");
+                    ui.label("Expense Explorer | Debug Version");
                 });
             });
         
@@ -199,7 +201,7 @@ impl<U: Upstream> Trac<U> {
             .min_height(48.0)
             .show(ctx, |ui| {
                 ui.horizontal_centered(|ui| {
-                    ui.label("Expense Explorer by House Ting | Debug Version");
+                    ui.label("Expense Explorer | Debug Version");
                 });
             });
         
@@ -230,15 +232,12 @@ impl<U: Upstream> Trac<U> {
                     let font = FontId::default();
                     let text_height = ui.fonts(|r| r.row_height(&font));
                     
-                    /*
-                    ScrollArea::vertical().show_rows(ui, text_height, b-a,
-                        |ui, row_range| {
-                            for row in row_range {
-                                let expense = self.db.load(row);
-                                ui.monospace(format!("{expense}"));
-                            }
+                    ScrollArea::vertical().show_rows(ui, text_height,
+                        self.db.total_live_transactions(),
+                        |ui, range| {
+                            self.db.load_some_spendings(range.start, range.end)
+                                .for_each(|ml| show_mayload(ui, ml));
                         });
-                    */
                 });
             });
         

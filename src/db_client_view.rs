@@ -34,7 +34,7 @@ impl CachedStats {
     }
     fn raw_sub(&mut self, category: &str, amount: u64) {
         let group_idx = *self.group_indices.get(category)
-            .expect("revoked record's group should be known");
+            .expect("subtracted record's group should be known");
         self.group_spendings[group_idx].1 -= amount;
         self.records_alive -= 1;
         self.total_spending -= amount;
@@ -68,6 +68,16 @@ impl CachedStats {
         self.raw_add(spent.0, spent.1);
     }
     
+    pub fn shift(&mut self, record_i: usize, record_to: usize,
+            spent: (&str, u64)) {
+        
+        let was_included = self.range().contains(&record_i);
+        let must_include = self.range().contains(&record_to);
+        
+        if !was_included && must_include {self.raw_add(spent.0, spent.1);}
+        if was_included && !must_include {self.raw_sub(spent.0, spent.1);}
+    }
+    
     pub fn borrow(&self) -> &[(String, u64)] {
         &self.group_spendings
     }
@@ -97,11 +107,7 @@ impl CachedStats {
             if !expired {break;}
             
             self.records_range.0 += 1;
-            let group_idx = *self.group_indices.get(category)
-                .expect("trimmed record's group should be known");
-            self.group_spendings[group_idx].1 -= amount;
-            self.records_alive -= 1;
-            self.total_spending -= amount;
+            self.raw_sub(category, amount);
         }
     }
 }
@@ -111,9 +117,12 @@ impl CachedStats {
 type DeqView<T> = (usize, VecDeque<T>);
 pub type MayLoad<'a> = Result<(usize, &'a Expense<'a>), ()>;
 
+fn group_amount_c<'a>(e: &'a ClientData<'a>) -> (&'a str, u64) {
+    (e.group.as_ref().map_or("unclassified", |cow| cow.as_ref()),
+     e.amount)
+}
 fn group_amount<'a>(e: &'a Expense<'a>) -> (&'a str, u64) {
-    (e.client.group.as_ref().map_or("unclassified", |cow| cow.as_ref()),
-     e.client.amount)
+    group_amount_c(&e.client)
 }
 
 #[derive(Default)]
@@ -128,6 +137,8 @@ pub struct DbView<U: Upstream> {
     //   (that is, "how many spending records can be loaded into the past").
     // live_records.1 is deque of (record number, data) pairs.
     live_records: DeqView<(usize, Expense<'static>)>,
+    
+    provisional: BTreeMap<usize, ClientData<'static>>,
 }
 impl<U: Upstream> DbView<U> {
     pub fn with(upstream: U) -> Self {
@@ -137,6 +148,7 @@ impl<U: Upstream> DbView<U> {
             pie_cache_forever: CachedStats::default(),  // TODO: change
             loaded_records: Default::default(),  // TODO: change
             live_records: Default::default(),  // TODO: change
+            provisional: BTreeMap::new(),
         }
     }
     
@@ -148,6 +160,13 @@ impl<U: Upstream> DbView<U> {
         (stats.total_spending, stats.records_alive)
     }
     
+    pub fn total_live_transactions(&mut self) -> usize {
+        // self.trim_caches();
+        // self.sync_upstream();
+        
+        self.pie_cache_forever.records_alive
+    }
+    
     pub fn month_pie(&mut self) -> &[(String, u64)] {
         self.trim_caches();
         self.sync_upstream();
@@ -157,12 +176,24 @@ impl<U: Upstream> DbView<U> {
     
     pub fn load_last_spendings(&mut self, n: usize) ->
             impl Iterator<Item=MayLoad<'_>> {
-        self.trim_caches();
-        self.sync_upstream();
+        // self.trim_caches();
+        // self.sync_upstream();
         
         self.live_records.1.iter().rev().map(|v| Ok((v.0, &v.1)))
             .chain(std::iter::repeat_n(Err(()), self.live_records.0))
             .take(n)
+    }
+    
+    pub fn load_some_spendings(&mut self, rev_later: usize, rev_older: usize) ->
+            impl Iterator<Item=MayLoad<'_>> {
+        self.trim_caches();
+        self.sync_upstream();
+        
+        assert!(rev_later <= rev_older);
+        
+        self.live_records.1.iter().rev().map(|v| Ok((v.0, &v.1)))
+            .chain(std::iter::repeat_n(Err(()), self.live_records.0))
+            .skip(rev_later).take(rev_older - rev_later)
     }
     
     pub fn insert_expense(&mut self, d: ClientData<'static>) {
@@ -172,7 +203,7 @@ impl<U: Upstream> DbView<U> {
         assert!(!d.revoked, "we shouldn't submit already-revoked records");
         
         // Generating ID assuming no one is writing in parallel.
-        let provisional_id = self.pie_cache_forever.records_range.1;
+        let provisional_id = self.total_live_transactions();
         self.pie_cache_month.push_back((
             d.group.as_ref().map_or("unclassified", |cow| cow.as_ref()),
             d.amount,
@@ -183,6 +214,7 @@ impl<U: Upstream> DbView<U> {
             d.amount,
             provisional_id
         ));
+        self.provisional.insert(provisional_id, d.clone());
         
         self.upstream.submit_expense(d, provisional_id);
         // Adding to deque views will be handled by DbView::sync_upstream;
@@ -267,46 +299,41 @@ impl<U: Upstream> DbView<U> {
                     }
                 },
                 UpstreamMessage::NewSpending{expense, asked_id, true_id} => {
-                    let known = asked_id.is_some();
+                    // We may need to remove a provisional record at this place.
+                    if let Some(local_exp) = self.provisional.remove(&true_id) {
+                        
+                        // Do we need to adjust the caches?
+                        if Some(true_id) != asked_id {
+                            self.pie_cache_month.rewrite(
+                                true_id,
+                                group_amount_c(&local_exp),
+                                group_amount(&expense),
+                            );
+                            self.pie_cache_forever.rewrite(
+                                true_id,
+                                group_amount_c(&local_exp),
+                                group_amount(&expense),
+                            );
+                        }
+                    } else if let Some(asked) = asked_id {
+                        // Expense moved to a free place `true_id` from `asked`.
+                        
+                        self.pie_cache_month.shift(asked, true_id,
+                            group_amount(&expense));
+                        self.pie_cache_forever.shift(asked, true_id,
+                            group_amount(&expense));
+                    } else {
+                        let (group, value) = group_amount(&expense);
+                        self.pie_cache_month.push_back((group,value,true_id));
+                        self.pie_cache_forever.push_back((group,value,true_id));
+                    }
                     
-                    let i = true_id - self.loaded_records.0;
-                    'mt: { match self.loaded_records.1.get_mut(i) {
-                        None => {
-                            let (group, amount) = group_amount(&expense);
-                            self.loaded_records.1.push_back(expense.clone());
-                            self.live_records.1.push_back((true_id,
-                                expense.clone()));
-                            
-                            if known {break 'mt;}
-                            self.pie_cache_month.push_back((group, amount,
-                                true_id));
-                            self.pie_cache_forever.push_back((group, amount,
-                                true_id));
-                        }
-                        Some(expense_old) => {
-                            // We have to rewrite something.
-                            self.pie_cache_month.rewrite(true_id,
-                                group_amount(expense_old),group_amount(&expense)
-                            );
-                            self.pie_cache_forever.rewrite(true_id,
-                                group_amount(expense_old),group_amount(&expense)
-                            );
-                            
-                            // Checking if `live_records` also needs this change
-                            if let Ok(p) = self.live_records.1.binary_search_by(
-                                    |x| x.0.cmp(&true_id)) {
-                                
-                                if expense.client.revoked {
-                                    self.live_records.1.remove(p);
-                                } else {
-                                    self.live_records.1[p] =
-                                        (true_id, expense.clone());
-                                }
-                            }
-                            
-                            *expense_old = expense;
-                        }
-                    }}
+                    assert_eq!(true_id, self.loaded_records.0
+                                      + self.loaded_records.1.len());
+                    self.loaded_records.1.push_back(expense.clone());
+                    
+                    if expense.client.revoked {continue;}
+                    self.live_records.1.push_back((true_id, expense.clone()));
                 },
             }
         }

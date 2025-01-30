@@ -15,6 +15,7 @@ fn main() -> eframe::Result {
     
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
+            .with_title("Expense Explorer")
             .with_inner_size([700.0, 600.0])
             .with_min_inner_size([600.0, 540.0])
             .with_icon(
@@ -25,7 +26,7 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "Expense Explorer",
+        "ton.ting.ExpenseExplorer",
         native_options,
         Box::new(|cc| Ok(Box::new(
             graphics::Trac::<Db>::new(cc, Db::default())

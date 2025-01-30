@@ -1,12 +1,4 @@
    Compiling ting-expense-a v0.1.0 (/home/tigr/ssh-move/ting-expense-a)
-warning: unused variable: `text_height`
-   --> src/graphics.rs:231:25
-    |
-231 |                     let text_height = ui.fonts(|r| r.row_height(&font));
-    |                         ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_text_height`
-    |
-    = note: `#[warn(unused_variables)]` on by default
-
 warning: type alias `Interval` is never used
   --> src/crosstyping.rs:49:10
    |
@@ -26,7 +18,7 @@ warning: field `principal` is never read
    |
    = note: `Metadata` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
 
-warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings
-warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (3 duplicates)
-warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (3 duplicates)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.20s
+warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings
+warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings (2 duplicates)
+warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings (2 duplicates)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.16s
