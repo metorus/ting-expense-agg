@@ -1,12 +1,16 @@
+// #[sides(client,server)]
+
 #[cfg(feature = "graphics")] mod db_client_view;
 #[cfg(feature = "graphics")] mod graphics;
 #[cfg(feature = "graphics")] mod ecs;
 #[cfg(feature = "graphics")] mod pie;
 mod crosstyping;
+mod dbs;
 
 
 #[cfg(feature = "graphics")]
-type Db = crosstyping::PseudoUpstream;
+type Db = dbs::SingleUserSqlite;
+// type Db = crosstyping::PseudoUpstream;
 
 
 #[cfg(all(feature = "graphics", not(target_arch = "wasm32")))]

@@ -1,3 +1,5 @@
+// #[sides(client)]
+
 use egui::*;
 use std::f32::consts::TAU;
 

@@ -1,2 +1,53 @@
-   Compiling ting-expense-a v0.1.0 (/home/tigr/ssh-move/ting-expense-a)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.08s
+   Compiling libsqlite3-sys v0.31.0
+The following warnings were emitted during compilation:
+
+warning: libsqlite3-sys@0.31.0: Compiler family detection failed due to error: ToolNotFound: Failed to find tool. Is `clang` installed?
+
+error: failed to run custom build command for `libsqlite3-sys v0.31.0`
+
+Caused by:
+  process didn't exit successfully: `/home/tigr/ssh-move/ting-expense-a/target/debug/build/libsqlite3-sys-4a8bbc5021b4bd49/build-script-build` (exit status: 1)
+  --- stdout
+  cargo:rerun-if-env-changed=LIBSQLITE3_SYS_USE_PKG_CONFIG
+  cargo:include=/home/tigr/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libsqlite3-sys-0.31.0/sqlite3
+  cargo:rerun-if-changed=sqlite3/sqlite3.c
+  cargo:rerun-if-changed=sqlite3/wasm32-wasi-vfs.c
+  cargo:rerun-if-env-changed=SQLITE_MAX_VARIABLE_NUMBER
+  cargo:rerun-if-env-changed=SQLITE_MAX_EXPR_DEPTH
+  cargo:rerun-if-env-changed=SQLITE_MAX_COLUMN
+  cargo:rerun-if-env-changed=LIBSQLITE3_FLAGS
+  OUT_DIR = Some(/home/tigr/ssh-move/ting-expense-a/target/wasm32-unknown-unknown/debug/build/libsqlite3-sys-2ce46f6f473558e0/out)
+  OPT_LEVEL = Some(0)
+  TARGET = Some(wasm32-unknown-unknown)
+  HOST = Some(x86_64-unknown-linux-gnu)
+  cargo:rerun-if-env-changed=CC_wasm32-unknown-unknown
+  CC_wasm32-unknown-unknown = None
+  cargo:rerun-if-env-changed=CC_wasm32_unknown_unknown
+  CC_wasm32_unknown_unknown = None
+  cargo:rerun-if-env-changed=TARGET_CC
+  TARGET_CC = None
+  cargo:rerun-if-env-changed=CC
+  CC = None
+  cargo:rerun-if-env-changed=CC_ENABLE_DEBUG_OUTPUT
+  cargo:warning=Compiler family detection failed due to error: ToolNotFound: Failed to find tool. Is `clang` installed?
+  RUSTC_WRAPPER = None
+  cargo:rerun-if-env-changed=CRATE_CC_NO_DEFAULTS
+  CRATE_CC_NO_DEFAULTS = None
+  DEBUG = Some(true)
+  cargo:rerun-if-env-changed=CFLAGS_wasm32-unknown-unknown
+  CFLAGS_wasm32-unknown-unknown = None
+  cargo:rerun-if-env-changed=CFLAGS_wasm32_unknown_unknown
+  CFLAGS_wasm32_unknown_unknown = None
+  cargo:rerun-if-env-changed=TARGET_CFLAGS
+  TARGET_CFLAGS = None
+  cargo:rerun-if-env-changed=CFLAGS
+  CFLAGS = None
+  CARGO_ENCODED_RUSTFLAGS = Some()
+
+  --- stderr
+
+
+  error occurred in cc-rs: Failed to find tool. Is `clang` installed?
+
+
+warning: build failed, waiting for other jobs to finish...

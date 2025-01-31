@@ -1,3 +1,5 @@
+// #[sides(client)]
+
 use egui::{*, FontFamily::Proportional, FontId};
 use eframe::{App, CreationContext};
 

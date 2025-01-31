@@ -1,51 +1,10 @@
-// targets: ALL
+// #[sides(client, server)]
 
 use time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339};
 
 use std::borrow::Cow;
 use uuid::Uuid;
 
-
-//----------------------------------------------------------------------------//
-/// Monotonic time measurements in form useful for external entities.
-/// It seems to be only relevant for server side, so TODO: consider refactoring.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct LogicalTime {
-    pub generation: u32,
-    pub instant:    OffsetDateTime
-}
-impl LogicalTime {
-    /// Returns a reference-zero time point.
-    /// It might not be the smallest time representable by chosen type but all
-    /// measurements will point past that moment.
-    fn zero() -> Self {
-        Self {generation: 0, instant: OffsetDateTime::UNIX_EPOCH}
-    }
-    
-    /// Issues next measurement, incrementing generation number if wall clock
-    /// happened to show an earlier time than previously.
-    /// 
-    /// Note this will not always detect clock rolling back because the method
-    /// might not get used till the time passed once again; nevertheless, it is
-    /// guaranteed that the returned timestamps increase monotonically.
-    fn now(last_stamp: &mut LogicalTime) -> Self {
-        // `last_stamp` is already initialized and `now()` returns a new value,
-        //  so the new measurement is always AFTER the previous one. We can just
-        //  increase the generation if needed.
-        // Transitivity ensured by deriving `PartialOrd` / `Ord`.
-        
-        let last_instant = last_stamp.instant;
-        
-        let now = OffsetDateTime::now_local().unwrap()
-                                 .replace_nanosecond(0).unwrap();
-        let gen = last_stamp.generation + if now < last_instant {1} else {0};
-        let obj = Self {generation: gen, instant: now};
-        
-        debug_assert!(obj >= *last_stamp);
-        
-        *last_stamp = obj;  obj
-    }
-}
 
 pub const MONTH_LIKE: Duration = Duration::days(30);
 
@@ -56,7 +15,7 @@ pub const MONTH_LIKE: Duration = Duration::days(30);
 #[derive(Clone)]
 pub struct Metadata<'de> {
     pub uid: Uuid,
-    pub time: LogicalTime,
+    pub time: OffsetDateTime,
     
     #[expect(dead_code, reason="until server is introduced, why read?")]
     pub principal: Option<Cow<'de, str>>    // None stands for local
@@ -80,10 +39,9 @@ impl<'de> std::fmt::Display for Expense<'de> {
         if self.client.revoked {
             return Err(std::fmt::Error);
         }
-        write!(f, "{:08X} - [{}]{} - {}P on {}",
+        write!(f, "{:08X} - {} - {}P on {}",
             self.server.uid.as_fields().0,
-            self.server.time.generation,
-            self.server.time.instant.format(&Rfc3339).unwrap(),
+            self.server.time.format(&Rfc3339).unwrap(),
             self.client.amount,
             self.client.group.as_ref().map_or("something", |cow| cow.as_ref())
         )
@@ -108,14 +66,12 @@ pub trait Upstream {
 pub struct PseudoUpstream {
     uncommitted_expenses: Vec<(ClientData<'static>, usize)>,
     uncommitted_revokes: Vec<usize>,
-    last_marker: LogicalTime,
 }
 impl Default for PseudoUpstream {
     fn default() -> Self {
         Self {
             uncommitted_expenses: Vec::with_capacity(1),
             uncommitted_revokes: vec![],
-            last_marker: LogicalTime::zero(),
         }
     }
 }
@@ -128,11 +84,11 @@ impl Upstream for PseudoUpstream {
     }
     fn sync(&mut self) -> Vec<UpstreamMessage> {
         let mut v = Vec::with_capacity(self.uncommitted_expenses.len() +
-                                   self.uncommitted_revokes.len());
+                                       self.uncommitted_revokes.len());
         for (client, asked_id) in self.uncommitted_expenses.drain(..) {
             let server = Metadata {
                 uid: Uuid::new_v4(),
-                time: LogicalTime::now(&mut self.last_marker),
+                time: OffsetDateTime::now_local().unwrap(),
                 principal: None
             };
             let expense = Expense{server, client};

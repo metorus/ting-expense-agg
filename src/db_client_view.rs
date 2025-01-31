@@ -1,3 +1,5 @@
+// #[sides(client)]
+
 use time::OffsetDateTime;
 
 use std::collections::{BTreeMap, VecDeque};
@@ -249,24 +251,11 @@ impl<U: Upstream> DbView<U> {
                                  .replace_nanosecond(0).unwrap();
         let liveline = now - MONTH_LIKE;
         
-        //          |=================|
-        //  W->-W---W---W---W
-        //        ,________/
-        //       W---W---W---W
-        //             ,____/
-        //            W---W---W---W---W-->
-        //          |=================|
-        // 
-        // in general, we attempt to keep first branch which measured time
-        //   of at least (now - MONTH_LIKE) and everything after it
-        // linear cache trimming means we can simply compare timestamps!
-        //   (TODO: mathematical proof)
-        
         self.pie_cache_month.trim_linear(|i| {
             let Some(i) = i.checked_sub(known.0) else {return None};
             let Some(expense) = known.1.get(i) else {return None};
             let (group, amount) = group_amount(expense);
-            let expired = expense.server.time.instant < liveline;
+            let expired = expense.server.time < liveline;
             Some((group, amount, expired))
         });
     }
