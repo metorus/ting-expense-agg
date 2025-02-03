@@ -4,7 +4,7 @@ use rusqlite::Connection;
 use uuid::Uuid;
 
 use crate::crosstyping::{UpstreamMessage, Upstream, Expense, ClientData, 
-                         DownstreamMessage, Metadata};
+                         DownstreamMessage, Metadata, CachedStats};
 
 
 pub struct SingleUserSqlite {
@@ -78,6 +78,10 @@ impl Upstream for SingleUserSqlite {
     
     fn sync(&mut self) -> Vec<UpstreamMessage> {
         self.report_stored_expenses.split_off(0)
+    }
+    
+    fn take_init(&mut self) -> (CachedStats, CachedStats, Vec<Expense>) {
+        Default::default()
     }
 }
 

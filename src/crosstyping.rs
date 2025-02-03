@@ -4,6 +4,8 @@ use time::{Duration,OffsetDateTime,format_description::well_known::Rfc3339};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use std::collections::BTreeMap;
+
 
 pub const MONTH_LIKE: Duration = Duration::days(30);
 
@@ -40,8 +42,34 @@ impl std::fmt::Display for Expense {
             self.server.uid.as_fields().0,
             self.server.time.format(&Rfc3339).unwrap(),
             self.client.amount,
-            self.client.group.as_ref().map_or("something", |cow| cow.as_ref())
+            self.client.group.as_deref().unwrap_or("something")
         )
+    }
+}
+
+#[derive(Default)]
+pub struct CachedStats {
+    pub records_alive: usize,
+    pub group_spendings: Vec<(String, u64)>,
+        group_indices: BTreeMap<String, usize>,
+    pub total_spending: u64,
+}
+impl CachedStats {
+    pub fn raw_add(&mut self, category: &str, amount: i64, d: isize) {
+        let group_idx = match self.group_indices.get(category) {
+            Some(i) => *i,
+            None => {
+                let i = self.group_spendings.len();
+                self.group_spendings.push((category.to_owned(), 0));
+                self.group_indices.insert(category.to_owned(), i);
+                i
+            }
+        };
+        self.group_spendings[group_idx].1 =
+            self.group_spendings[group_idx].1.saturating_add_signed(amount);
+        self.records_alive = self.records_alive.saturating_add_signed(d);
+        self.total_spending =
+            self.total_spending.saturating_add_signed(amount);
     }
 }
 
@@ -62,6 +90,10 @@ pub enum DownstreamMessage {
 pub trait Upstream {
     fn submit(&mut self, d: DownstreamMessage);
     fn sync(&mut self) -> Vec<UpstreamMessage>;
+    
+    /// Lifetime stats, month stats, at least month's worth of RECENTMOST
+    /// confirmed expenses.
+    fn take_init(&mut self) -> (CachedStats, CachedStats, Vec<Expense>);
 }
 
 
@@ -105,6 +137,9 @@ impl Upstream for PseudoUpstream {
                      .map(|i| UpstreamMessage::Revoked{expense_id: i}));
         */
         v
+    }
+    fn take_init(&mut self) -> (CachedStats, CachedStats, Vec<Expense>) {
+        Default::default()
     }
 }
 

@@ -1,5 +1,6 @@
 // #[sides(client)]
 
+use time::format_description::well_known::Rfc3339;
 use egui::{*, FontFamily::Proportional, FontId};
 use eframe::{App, CreationContext};
 
@@ -31,9 +32,15 @@ fn color_cat(a: &str) -> Color32 {
 /// Creates a representation of given Ok(expense) or Err(fact that it's not
 /// loaded yet) on given ui, using single widget.
 fn show_mayload(ui: &mut Ui, ml: MayLoad<'_>) {
+    use MayLoad::*;
+    
     match ml {
-        Ok(e)   => ui.monospace(e.1.to_string()),
-        Err(()) => ui.monospace("------------------------------"),
+        Confirmed(e) => ui.monospace(e.to_string()),
+        NotLoaded    => ui.monospace("------------------------------"),
+        Provisional{data, temp_time} =>
+            ui.monospace(format!("[LOCAL!] - {} - {}P on {}",
+                temp_time.format(&Rfc3339).unwrap(),
+                data.amount, data.group.as_deref().unwrap_or("something"))),
     };
 }
 
