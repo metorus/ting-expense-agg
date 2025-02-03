@@ -1,6 +1,7 @@
 // #[sides(client)]
 
 use time::OffsetDateTime;
+use uuid::Uuid;
 
 use std::collections::{BTreeMap, VecDeque};
 use std::ops::Range;
@@ -117,13 +118,13 @@ impl CachedStats {
 
 
 type DeqView<T> = (usize, VecDeque<T>);
-pub type MayLoad<'a> = Result<(usize, &'a Expense<'a>), ()>;
+pub type MayLoad<'a> = Result<(usize, &'a Expense), ()>;
 
-fn group_amount_c<'a>(e: &'a ClientData<'a>) -> (&'a str, u64) {
+fn group_amount_c(e: &ClientData) -> (&str, u64) {
     (e.group.as_ref().map_or("unclassified", |cow| cow.as_ref()),
      e.amount)
 }
-fn group_amount<'a>(e: &'a Expense<'a>) -> (&'a str, u64) {
+fn group_amount(e: &Expense) -> (&str, u64) {
     group_amount_c(&e.client)
 }
 
@@ -132,15 +133,15 @@ pub struct DbView<U: Upstream> {
     upstream: U,
     pie_cache_month: CachedStats,
     pie_cache_forever: CachedStats,
-    loaded_records: DeqView<Expense<'static>>,  // aims to have last month known
+    loaded_records: DeqView<Expense>,  // aims to have last month known
     
     // live_records.0 (first field of DeqView) is same as loaded_records.0
     //   and stands for "what's the index of oldest known spending record"
     //   (that is, "how many spending records can be loaded into the past").
     // live_records.1 is deque of (record number, data) pairs.
-    live_records: DeqView<(usize, Expense<'static>)>,
+    live_records: DeqView<(usize, Expense)>,
     
-    provisional: BTreeMap<usize, ClientData<'static>>,
+    provisional: BTreeMap<Uuid, ClientData>,
 }
 impl<U: Upstream> DbView<U> {
     pub fn with(upstream: U) -> Self {
@@ -198,14 +199,14 @@ impl<U: Upstream> DbView<U> {
             .skip(rev_later).take(rev_older - rev_later)
     }
     
-    pub fn insert_expense(&mut self, d: ClientData<'static>) {
+    pub fn insert_expense(&mut self, d: ClientData) {
         // We aren't gonna have ServerData like expense's index until upstream
         //   responds, but we must already show it.
         
         assert!(!d.revoked, "we shouldn't submit already-revoked records");
         
         // Generating ID assuming no one is writing in parallel.
-        let provisional_id = self.total_live_transactions();
+        let provisional_id = Uuid::now_v7();
         self.pie_cache_month.push_back((
             d.group.as_ref().map_or("unclassified", |cow| cow.as_ref()),
             d.amount,
@@ -223,7 +224,7 @@ impl<U: Upstream> DbView<U> {
         //   record will be rewritten if it's moved.
     }
     
-    fn revoke_base(lr: &mut DeqView<Expense<'static>>,
+    fn revoke_base(lr: &mut DeqView<Expense>,
                    pie_cache_month: &mut CachedStats,
                    pie_cache_forever: &mut CachedStats,
                    i: usize) {

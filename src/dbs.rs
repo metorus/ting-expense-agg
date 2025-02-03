@@ -1,14 +1,43 @@
 // #[sides(server,client)]
 
 use rusqlite::Connection;
+use uuid::Uuid;
 
 use crate::crosstyping::{UpstreamMessage, Upstream, Expense, ClientData, 
-                         Metadata};
+                         DownstreamMessage, Metadata};
 
 
 pub struct SingleUserSqlite {
     conn: Connection,
     report_stored_expenses: Vec<UpstreamMessage>,
+}
+impl SingleUserSqlite {
+    fn submit_expense(&mut self, d: ClientData, temp_alias: Uuid)  {
+        let expense = self.conn.query_row("
+INSERT INTO spending_records(amount_indivisible, spend_group) VALUES(?1, ?2)
+   RETURNING id,
+             principal,
+             unix_date;
+        ", (d.amount, d.group.clone()), |row| {
+            // dbg!(row);
+            
+            let server = Metadata {
+                uid:       row.get(0)?,
+                principal: row.get(1)?,
+                time:      row.get(2)?,
+            };
+            Ok(Expense{server, client: d})
+        }).unwrap();
+        
+        self.report_stored_expenses.push(UpstreamMessage::NewSpending{
+            expense, temp_alias
+        });
+    }
+    
+    fn submit_revoke(&mut self, total_id: Uuid) {
+        let _ = total_id;
+        todo!()
+    }
 }
 
 impl Default for SingleUserSqlite {
@@ -36,34 +65,15 @@ COMMIT;
 }
 
 impl Upstream for SingleUserSqlite {
-    fn submit_expense(&mut self, d: ClientData<'static>, provisional_id: usize) {
-        let (expense, true_id) = self.conn.query_row("
-INSERT INTO spending_records(amount_indivisible, spend_group) VALUES(?1, ?2)
-   RETURNING id,
-             principal,
-             unix_date,
-             (SELECT count(*) FROM spending_records WHERE principal ISNULL);
-        ", (d.amount, d.group.clone()), |row| {
-            // dbg!(row);
-            
-            let server = Metadata {
-                uid:       row.get(0)?,
-                principal: row.get(1)?,
-                time:      row.get(2)?,
-            };
-            let true_id_p1: usize = row.get(3)?;
-            Ok((Expense{server, client: d}, true_id_p1 - 1))
-        }).unwrap();
-        
-        let asked_id = Some(provisional_id);
-        
-        self.report_stored_expenses.push(UpstreamMessage::NewSpending{
-            expense, asked_id, true_id
-        });
-    }
-    
-    fn submit_revoke(&mut self, _total_id: usize) {
-        todo!()
+    fn submit(&mut self, d: DownstreamMessage) {
+        match d {
+            DownstreamMessage::Revoked{expense_id} => {
+                self.submit_revoke(expense_id)
+            },
+            DownstreamMessage::MadeExpense{info, temp_alias} => {
+                self.submit_expense(info, temp_alias);
+            }
+        }
     }
     
     fn sync(&mut self) -> Vec<UpstreamMessage> {

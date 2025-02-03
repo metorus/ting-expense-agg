@@ -24,12 +24,18 @@ wasm-bindgen-futures = "0.4"
 web-sys = "0.3.70"           # to access the DOM (to hide the loading text)
 
 [dependencies]
-axum = { version = "0.7.3", optional = true }
+anyhow = "1.0.97"
+axum = { version = "0.7.3", features = ["ws"], optional = true }
 axum-extra = { version = "0.9.3", features = ["cookie", "cookie-signed"], optional = true }
 eframe = { version = "0.30.0", features = ["accesskit", "default_fonts", "glow", "persistence", "wayland"], optional = true }
 egui = { version = "0.30.0", optional = true }
+futures = "0.3.31"
+postcard = { version = "1.1.1", features = ["use-std"] }
 rusqlite = { version = "0.33.0", features = ["bundled", "time", "uuid"] }
-time = { version = "0.3.37", features = ["formatting", "local-offset"] }
+serde = { version = "1.0.219", features = ["derive"] }
+time = { version = "0.3.37", features = ["formatting", "local-offset", "serde"] }
+tokio = { version = "1.44.1", features = ["sync"] }
+tokio-stream = { version = "0.1.17" }
 
 [features]
 headless = ["dep:axum", "dep:axum-extra"]
@@ -44,11 +50,7 @@ default  = ["graphics"]
 
 [dependencies.uuid]
 version = "1.11.0"
-features = [
-    "v4",                # Lets us generate random UUIDs
-    "fast-rng",          # Use a faster (but still sufficiently random) RNG
-    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
-]
+features = ["v4", "fast-rng", "macro-diagnostics", "serde", "v7"]
 
 [dependencies.getrandom]
 version = "0.2.15"
