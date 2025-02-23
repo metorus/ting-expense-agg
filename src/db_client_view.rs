@@ -1,10 +1,8 @@
 // #[sides(client)]
 
 use time::OffsetDateTime;
+use liquemap::LiqueMap;
 use uuid::Uuid;
-
-use std::collections::{BTreeMap, VecDeque};
-use std::ops::Range;
 
 use crate::crosstyping::{CachedStats, ClientData, Expense, MONTH_LIKE};
 use crate::crosstyping::{Upstream, UpstreamMessage, DownstreamMessage};
@@ -21,10 +19,29 @@ pub enum MayLoad<'a> {
     NotLoaded,
 }
 
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub enum RecordViewKey {
+    Confirmed(OffsetDateTime, Uuid),
+    Provisional(Uuid)
+}
+pub enum RecordViewValue {
+    Confirmed(Expense),
+    Provisional(ClientData, OffsetDateTime)
+}
+impl RecordViewValue {
+    fn borrow(&self) -> MayLoad<'_> {
+        use RecordViewValue::*;
+        match self {
+            Confirmed(c) => MayLoad::Confirmed(c),
+            Provisional(data, temp_time) => MayLoad::Provisional{data, temp_time: *temp_time},
+        }
+    }
+}
+
+
 pub struct DbView<U: Upstream> {
     upstream: U,
-    live_records: Vec<Expense>,
-    provisional: Vec<(Uuid, ClientData, OffsetDateTime)>,
+    live_records: LiqueMap<RecordViewKey, RecordViewValue>,
     life_stats: CachedStats,
     month_stats: CachedStats
 }
@@ -33,10 +50,16 @@ impl<U: Upstream> DbView<U> {
     pub fn with(mut upstream: U) -> Self {
         let (life_stats, month_stats, live_records) = upstream.take_init();
         
+        let mut live_records_map = LiqueMap::new();
+        for exp in live_records {
+            live_records_map.insert(
+                RecordViewKey::Confirmed(exp.server.time, exp.server.uid),
+                RecordViewValue::Confirmed(exp));
+        }
+        
         Self {
             upstream,
-            live_records,
-            provisional: Vec::with_capacity(1),
+            live_records: live_records_map,
             life_stats,
             month_stats,
         }
@@ -65,9 +88,9 @@ impl<U: Upstream> DbView<U> {
     }
 
     fn handle_revocation(&mut self, expense: Expense, liveline: OffsetDateTime) {
-        let Ok(idx) = self.live_records.binary_search_by(|e|
-            e.server.time.cmp(&expense.server.time)) else {return};
-        self.live_records.remove(idx);
+        if self.live_records.remove(
+            &RecordViewKey::Confirmed(expense.server.time, expense.server.uid)
+        ).is_none() {return;}
         
         let c = &expense.client;
         self.life_stats.raw_add(c.group.as_deref().unwrap_or(UNCLASSIFIED),
@@ -81,12 +104,9 @@ impl<U: Upstream> DbView<U> {
     fn apply_confirmed(&mut self, expense: Expense, temp_alias: Uuid, liveline: OffsetDateTime) {
         assert!(!expense.client.revoked);
         
-        let was_provisional = self.provisional.binary_search_by(|e|
-            e.0.cmp(&temp_alias));
-
-        if let Ok(idx) = was_provisional {
-            self.provisional.remove(idx);
-        } else {
+        let remove_pos = RecordViewKey::Provisional(temp_alias);
+        let was_foreign = self.live_records.remove(&remove_pos).is_none();
+        if was_foreign {
             let amount = expense.client.amount;
             let group = &expense.client.group;
             
@@ -98,57 +118,67 @@ impl<U: Upstream> DbView<U> {
             }
         }
 
-        let insert_pos = self.live_records.partition_point(|e|
-            e.server.time < expense.server.time);
-        self.live_records.insert(insert_pos, expense);
+        let insert_pos = RecordViewKey::Confirmed(expense.server.time, expense.server.uid);
+        self.live_records.insert(insert_pos, RecordViewValue::Confirmed(expense));
     }
 
     pub fn month_transactions_info(&mut self) -> (u64, usize) {
+        self.sync_upstream();
         (self.month_stats.total_spending, self.month_stats.records_alive)
     }
 
     pub fn life_transactions_info(&mut self) -> (u64, usize) {
+        self.sync_upstream();
         (self.life_stats.total_spending, self.life_stats.records_alive)
     }
     pub fn total_live_transactions(&mut self) -> usize {
+        self.sync_upstream();
         self.life_stats.records_alive
     }
 
     pub fn month_pie(&mut self) -> &[(String, u64)] {
+        self.sync_upstream();
         self.month_stats.group_spendings.as_slice()
     }
 
     pub fn life_pie(&mut self) -> &[(String, u64)] {
+        self.sync_upstream();
         self.life_stats.group_spendings.as_slice()
     }
 
     pub fn load_last_spendings(&mut self, n: usize) -> impl Iterator<Item = MayLoad<'_>> {
-        let confirmed = self.live_records.iter().rev().map(MayLoad::Confirmed);
-        let provisional = self.provisional.iter().rev()
-            .map(|(_, d, t)| MayLoad::Provisional{data: d, temp_time: *t});
+        self.sync_upstream();
+        
+        // iterators are unfortunately not reversible yet
+        // TODO: fix liquemap crate
         
         let total_records = self.life_stats.records_alive;
-        let have_records = self.live_records.len() + self.provisional.len();
+        let have_records = self.live_records.len();
         
+        let visible = self.live_records
+            .range_mut_idx(have_records.saturating_sub(n)..)
+            .rev()
+            .map(|(_k, r)| r.borrow());
         let missing = std::iter::repeat(MayLoad::NotLoaded)
             .take(total_records.saturating_sub(have_records));
             
-        provisional.chain(confirmed).chain(missing).take(n)
+        visible.chain(missing).take(n)
     }
 
     pub fn load_some_spendings(&mut self, rev_from: usize, rev_to: usize) -> impl Iterator<Item = MayLoad<'_>> {
-        let confirmed = self.live_records.iter().rev().map(MayLoad::Confirmed);
-        let provisional = self.provisional.iter().rev()
-            .map(|(_, d, t)| MayLoad::Provisional{data: d, temp_time: *t});
+        self.sync_upstream();
         
         let total_records = self.life_stats.records_alive;
-        let have_records = self.live_records.len() + self.provisional.len();
+        let have_records = self.live_records.len();
         
+        let visible = self.live_records
+            .range_mut_idx(have_records.saturating_sub(rev_to)..have_records.saturating_sub(rev_from))
+            .rev()
+            .map(|(_k, r)| r.borrow());
         let missing = std::iter::repeat(MayLoad::NotLoaded)
             .take(total_records.saturating_sub(have_records));
-            
-        provisional.chain(confirmed).chain(missing)
-            .skip(rev_from).take(rev_to - rev_from)
+        
+        visible.chain(missing).take(rev_to - rev_from)
     }
 
     pub fn insert_expense(&mut self, c: ClientData) {
@@ -157,12 +187,10 @@ impl<U: Upstream> DbView<U> {
         let now = OffsetDateTime::now_utc();
         let temp_alias = Uuid::now_v7();
         
-        self.life_stats.raw_add(c.group.as_deref().unwrap_or(UNCLASSIFIED),
-            (c.amount as i64), 1);
-        self.month_stats.raw_add(c.group.as_deref().unwrap_or(UNCLASSIFIED),
-            (c.amount as i64), 1);
+        self.life_stats.raw_add(c.group.as_deref().unwrap_or(UNCLASSIFIED), c.amount as i64, 1);
+        self.month_stats.raw_add(c.group.as_deref().unwrap_or(UNCLASSIFIED), c.amount as i64, 1);
         
-        self.provisional.push((temp_alias, c.clone(), now));
+        self.live_records.insert(RecordViewKey::Provisional(temp_alias), RecordViewValue::Provisional(c.clone(), now));
         self.upstream.submit(DownstreamMessage::MadeExpense {
             info: c,
             temp_alias,
