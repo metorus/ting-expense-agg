@@ -287,3 +287,73 @@ impl<U: Upstream> App for Trac<U> {
     }
 }
 
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn run_app(db: impl Upstream) -> eframe::Result {
+    let icon = include_bytes!("../assets/icon-32.png");
+    
+    let native_options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_title("Expense Explorer")
+            .with_inner_size([700.0, 600.0])
+            .with_min_inner_size([600.0, 540.0])
+            .with_icon(
+                eframe::icon_data::from_png_bytes(&icon[..])
+                    .expect("Failed to load icon"),
+            )
+            ,
+        ..Default::default()
+    };
+    eframe::run_native(
+        "ton.ting.ExpenseExplorer",
+        native_options,
+        Box::new(|cc| Ok(Box::new(
+            Trac::new(cc, db)
+        ))),
+    )
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn run_app(db: impl Upstream) {
+    use eframe::wasm_bindgen::JsCast as _;
+    // eframe::WebLogger::init(log::LevelFilter::Debug).ok();
+    let web_options = eframe::WebOptions::default();
+
+    wasm_bindgen_futures::spawn_local(async {
+        let document = web_sys::window().expect("No window")
+            .document().expect("No document");
+
+        let canvas = document
+            .get_element_by_id("the_canvas_id")
+            .expect("Failed to find the_canvas_id")
+            .dyn_into::<web_sys::HtmlCanvasElement>()
+            .expect("the_canvas_id was not a HtmlCanvasElement");
+
+        let start_result = eframe::WebRunner::new()
+            .start(
+                canvas,
+                web_options,
+                Box::new(|cc| Ok(Box::new(
+                    Trac::new(cc, db)
+                ))),
+            )
+            .await;
+
+        // Remove the loading text and spinner:
+        if let Some(loading_text) = document.get_element_by_id("loading_text") {
+            match start_result {
+                Ok(_) => {
+                    loading_text.remove();
+                }
+                Err(e) => {
+                    loading_text.set_inner_html(
+                        "<p> App crashed, see details in console. </p>",
+                    );
+                    panic!("Failed to start eframe: {e:?}");
+                }
+            }
+        }
+    });
+}
+
+

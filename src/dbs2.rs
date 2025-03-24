@@ -30,6 +30,13 @@ CREATE TABLE spending_records (
 );
 CREATE INDEX live_records ON spending_records(principal ASC, revoked ASC, unix_date DESC);
 CREATE INDEX all_records ON spending_records(principal, unix_date DESC);
+
+CREATE TABLE users (
+    device    TEXT PRIMARY KEY NOT NULL,
+    principal TEXT             NOT NULL,
+    totp_key  BLOB             DEFAULT(randomblob(24))
+);
+CREATE INDEX enum_devices ON users(principal);
 COMMIT;
         ").unwrap();
         

@@ -2,6 +2,8 @@ use axum::extract::{State, Extension, ws::{CloseFrame, Message, close_code}};
 use axum::{extract::WebSocketUpgrade, response::IntoResponse};
 use tokio::sync::broadcast::error::RecvError;
 use postcard::{to_stdvec, from_bytes};
+use axum::{routing::get, Router};
+use tokio::net::TcpListener;
 use futures::*;
 
 use std::sync::Arc;
@@ -10,20 +12,25 @@ use crate::crosstyping::DownstreamMessage;
 use crate::dbs2::MultiuserDb;
 
 
+#[derive(Clone)]
 pub struct UserAuth(String);
 
 
-pub async fn handle_websocket(State(db): State<Arc<MultiuserDb>>, Extension(UserAuth(principal)): Extension<UserAuth>, ws: WebSocketUpgrade) -> impl IntoResponse {
+pub async fn handle_websocket(
+    State(db): State<Arc<MultiuserDb>>,
+    Extension(UserAuth(principal)): Extension<UserAuth>,
+    ws: WebSocketUpgrade
+) -> impl IntoResponse {
     ws.on_upgrade(|sock| async move {
         let mut update_receiver = db.subscribe(principal.clone()).await;
         let (mut ws_write, mut ws_read) = sock.split();
         
-        // Cancellation safety is not documented so we must handle it
-        // ourselves.
+        // Cancellation safety is not documented so we must handle it ourselves.
         let mut ws_read_future = ws_read.next().boxed();
         
         let close_code = loop {tokio::select! {
-            // Cancel-safe. https://docs.rs/tokio/1.43.0/tokio/sync/broadcast/struct.Receiver.html#cancel-safety
+            // Cancel-safe.
+            // https://docs.rs/tokio/1.43.0/tokio/sync/broadcast/struct.Receiver.html#cancel-safety
             clientbound = update_receiver.recv() => {
                 match clientbound {
                     // Forwarding message to the connected client.
@@ -96,5 +103,18 @@ pub async fn handle_websocket(State(db): State<Arc<MultiuserDb>>, Extension(User
         let close_fut = ws_write.send(Message::Close(Some(close_frame)));
         let _ = close_fut.await;
     })
+}
+
+
+pub async fn serve_forever(bind_ip: &'static str) {
+    let db = Arc::new(MultiuserDb::mem_new());
+    let app = Router::new()
+        // .route("/api/login", get(|| async { "todo" }))
+        .route("/ws", get(handle_websocket))
+        .with_state(db)
+        .route("/", get("Hello, World!"));
+
+    let listener = TcpListener::bind(bind_ip).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
 

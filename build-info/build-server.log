@@ -1,0 +1,45 @@
+warning: constant `MONTH_LIKE` is never used
+  --> src/crosstyping.rs:10:11
+   |
+10 | pub const MONTH_LIKE: Duration = Duration::days(30);
+   |           ^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: fields `records_alive`, `group_spendings`, `group_indices`, and `total_spending` are never read
+  --> src/crosstyping.rs:52:9
+   |
+51 | pub struct CachedStats {
+   |            ----------- fields in this struct
+52 |     pub records_alive: usize,
+   |         ^^^^^^^^^^^^^
+53 |     pub group_spendings: Vec<(String, u64)>,
+   |         ^^^^^^^^^^^^^^^
+54 |         group_indices: BTreeMap<String, usize>,
+   |         ^^^^^^^^^^^^^
+55 |     pub total_spending: u64,
+   |         ^^^^^^^^^^^^^^
+
+warning: method `raw_add` is never used
+  --> src/crosstyping.rs:58:12
+   |
+57 | impl CachedStats {
+   | ---------------- method in this implementation
+58 |     pub fn raw_add(&mut self, category: &str, amount: i64, d: isize) {
+   |            ^^^^^^^
+
+warning: methods `submit`, `sync`, and `take_init` are never used
+  --> src/crosstyping.rs:91:8
+   |
+90 | pub trait Upstream {
+   |           -------- methods in this trait
+91 |     fn submit(&mut self, d: DownstreamMessage);
+   |        ^^^^^^
+92 |     fn sync(&mut self) -> Vec<UpstreamMessage>;
+   |        ^^^^
+...
+96 |     fn take_init(&mut self) -> (CachedStats, CachedStats, Vec<Expense>);
+   |        ^^^^^^^^^
+
+warning: `ting-expense-a` (bin "ting-expense-a") generated 4 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s
