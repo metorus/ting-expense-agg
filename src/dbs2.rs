@@ -6,7 +6,7 @@ use anyhow::{bail, Result};
 use rusqlite::Connection;
 use uuid::Uuid;
 
-use crate::crosstyping::{UpstreamMessage, Expense, ClientData, Metadata};
+use crate::crosstyping::{UpstreamMessage, Expense, CachedStats, ClientData, Metadata};
 
 
 pub struct MultiuserDb {
@@ -28,8 +28,8 @@ CREATE TABLE spending_records (
     spend_group        TEXT,
     revoked            BOOL     DEFAULT FALSE
 );
-CREATE INDEX live_records ON spending_records(principal ASC, revoked ASC, unix_date DESC);
-CREATE INDEX all_records ON spending_records(principal, unix_date DESC);
+CREATE INDEX live_records ON spending_records(principal, revoked, unix_date);
+CREATE INDEX aggregate_records ON spending_records(principal, revoked, spend_group, unix_date);
 
 CREATE TABLE users (
     device    TEXT PRIMARY KEY NOT NULL,
@@ -115,6 +115,58 @@ UPDATE spending_records SET revoked = TRUE WHERE principal = ?1 AND id = ?2
             .entry(principal)
             .or_insert_with(|| broadcast::channel(16).0)
             .subscribe()
+    }
+    
+    pub async fn load(&self, principal: &str) -> Result<()> {
+        let conn = self.conn.lock().await;
+        
+        let lifetime_gen: (u64, usize) = conn.query_row(
+            "SELECT SUM(amount_indivisible), COUNT(*) FROM spending_records
+             WHERE principal = ? AND revoked = FALSE", (principal,),
+            |row| {
+                let total: Option<u64> = row.get(0)?;
+                Ok((total.unwrap_or(0), row.get(1)?))
+            },
+        )?;
+        let lifetime_grouped: Vec<(String, u64)> = conn.prepare(
+            "SELECT COALESCE(spend_group, ''), SUM(amount_indivisible) FROM spending_records
+             WHERE principal = ? AND revoked = FALSE GROUP BY spend_group")?.query_map((principal,),
+            |row| {
+                let group: String = row.get(0)?;
+                let total: u64 = row.get(1)?;
+                Ok((group, total))
+            }
+        )?.filter_map(|r| r.ok()).collect::<Vec<_>>();
+        let lifetime_stats = CachedStats::new(lifetime_gen, lifetime_grouped);
+        
+        let recent_expenses: Vec<Expense> = conn.prepare(
+            "SELECT id, principal, unix_date, amount_indivisible, spend_group, revoked 
+             FROM spending_records 
+             WHERE principal = ? AND revoked = FALSE AND unix_date >= date('now', '-30 days')
+             ORDER BY unix_date ASC",
+        )?.query_map((principal,),
+            |row| {
+                let server = Metadata {
+                    uid:       row.get(0)?,
+                    principal: row.get(1)?,
+                    time:      row.get(2)?,
+                };
+                let client = ClientData {
+                    amount:    row.get(3)?,
+                    group:     row.get(4)?,
+                    revoked:   row.get(5)?
+                };
+                Ok(Expense{server, client})
+            }
+        )?.filter_map(|r| r.ok()).collect::<Vec<_>>();
+        
+        std::mem::drop(conn);
+        
+        // if there are WebSockets or SSEs connected, we must notify them
+        if let Some(s) = self.clients_notify_updates.read().await.get(principal) {
+            let _ = s.send(UpstreamMessage::InitStats {lifetime_stats, recent_expenses});
+        }
+        Ok(())
     }
 }
 

@@ -80,8 +80,8 @@ impl Upstream for SingleUserSqlite {
         self.report_stored_expenses.split_off(0)
     }
     
-    fn take_init(&mut self) -> (CachedStats, CachedStats, Vec<Expense>) {
-        Default::default()
+    fn take_init(&mut self) -> Option<(CachedStats, CachedStats, Vec<Expense>)> {
+        Some(Default::default())
     }
 }
 

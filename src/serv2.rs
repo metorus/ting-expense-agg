@@ -23,6 +23,7 @@ pub async fn handle_websocket(
 ) -> impl IntoResponse {
     ws.on_upgrade(|sock| async move {
         let mut update_receiver = db.subscribe(principal.clone()).await;
+        db.load(&principal).await.unwrap();
         let (mut ws_write, mut ws_read) = sock.split();
         
         // Cancellation safety is not documented so we must handle it ourselves.

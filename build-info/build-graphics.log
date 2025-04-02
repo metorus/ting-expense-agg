@@ -1,55 +1,40 @@
-   Compiling tokio v1.44.1
-   Compiling tokio-stream v0.1.17
    Compiling ting-expense-a v0.2.0 (/home/tigr/SeriousSoft/Rusty/ting-expense-a)
-warning: methods `life_transactions_info` and `life_pie` are never used
-   --> src/db_client_view.rs:130:12
-    |
-49  | impl<U: Upstream> DbView<U> {
-    | --------------------------- methods in this implementation
-...
-130 |     pub fn life_transactions_info(&mut self) -> (u64, usize) {
-    |            ^^^^^^^^^^^^^^^^^^^^^^
-...
-144 |     pub fn life_pie(&mut self) -> &[(String, u64)] {
-    |            ^^^^^^^^
-    |
-    = note: `#[warn(dead_code)]` on by default
-
-warning: struct `MultiuserDb` is never constructed
-  --> src/dbs2.rs:12:12
+error[E0308]: mismatched types
+  --> src/db_client_view.rs:51:13
    |
-12 | pub struct MultiuserDb {
-   |            ^^^^^^^^^^^
-
-warning: associated items `mem_new`, `submit_expense`, `submit_revoke`, and `subscribe` are never used
-   --> src/dbs2.rs:18:12
-    |
-17  | impl MultiuserDb {
-    | ---------------- associated items in this implementation
-18  |     pub fn mem_new() -> Self {
-    |            ^^^^^^^
-...
-49  |     pub async fn submit_expense(&self, principal: &str, d: ClientData, temp_alias: Uuid) -> Result<Expense> {
-    |                  ^^^^^^^^^^^^^^
-...
-78  |     pub async fn submit_revoke(&self, principal: &str, total_id: Uuid) -> Result<Expense> {
-    |                  ^^^^^^^^^^^^^
-...
-112 |     pub async fn subscribe(&self, principal: String) -> broadcast::Receiver<UpstreamMessage> {
-    |                  ^^^^^^^^^
-
-warning: unused `Result` that must be used
-  --> src/main.rs:17:5
+51 |         let (life_stats, month_stats, live_records) = upstream.take_init();
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   -------------------- this expression has type `std::option::Option<(CachedStats, CachedStats, std::vec::Vec<Expense>)>`
+   |             |
+   |             expected `Option<(CachedStats, CachedStats, ...)>`, found `(_, _, _)`
    |
-17 |     graphics::run_app(db);
-   |     ^^^^^^^^^^^^^^^^^^^^^
+   = note: expected enum `std::option::Option<(CachedStats, CachedStats, std::vec::Vec<Expense>)>`
+             found tuple `(_, _, _)`
+help: try wrapping the pattern in `Some`
    |
-   = note: this `Result` may be an `Err` variant, which should be handled
-   = note: `#[warn(unused_must_use)]` on by default
-help: use `let _ = ...` to ignore the resulting value
-   |
-17 |     let _ = graphics::run_app(db);
-   |     +++++++
+51 |         let Some((life_stats, month_stats, live_records)) = upstream.take_init();
+   |             +++++                                       +
 
-warning: `ting-expense-a` (bin "ting-expense-a") generated 4 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.90s
+error[E0004]: non-exhaustive patterns: `UpstreamMessage::InitStats { .. }` not covered
+  --> src/db_client_view.rs:79:19
+   |
+79 |             match msg {
+   |                   ^^^ pattern `UpstreamMessage::InitStats { .. }` not covered
+   |
+note: `UpstreamMessage` defined here
+  --> src/crosstyping.rs:92:10
+   |
+92 | pub enum UpstreamMessage {
+   |          ^^^^^^^^^^^^^^^
+...
+95 |     InitStats {lifetime_stats: CachedStats, recent_expenses: Vec<Expense>}
+   |     --------- not covered
+   = note: the matched value is of type `UpstreamMessage`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown
+   |
+85 ~                 },
+86 +                 UpstreamMessage::InitStats { .. } => todo!()
+   |
+
+Some errors have detailed explanations: E0004, E0308.
+For more information about an error, try `rustc --explain E0004`.
+error: could not compile `ting-expense-a` (bin "ting-expense-a") due to 2 previous errors

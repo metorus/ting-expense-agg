@@ -47,11 +47,11 @@ impl std::fmt::Display for Expense {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct CachedStats {
     pub records_alive: usize,
     pub group_spendings: Vec<(String, u64)>,
-        group_indices: BTreeMap<String, usize>,
+    #[serde(skip)] group_indices: BTreeMap<String, usize>,
     pub total_spending: u64,
 }
 impl CachedStats {
@@ -71,6 +71,19 @@ impl CachedStats {
         self.total_spending =
             self.total_spending.saturating_add_signed(amount);
     }
+    pub fn new(records: (u64, usize), group_spendings: Vec<(String, u64)>) -> Self {
+        let (total_spending, records_alive) = records;
+        let group_indices = BTreeMap::new();
+        let mut this = Self {records_alive, group_spendings, group_indices, total_spending};
+        this.set_indices();
+        this
+    }
+    pub fn set_indices(&mut self) {
+        self.group_indices.clear();
+        for (i, (g, _)) in self.group_spendings.iter().enumerate() {
+            self.group_indices.insert(g.to_owned(), i);
+        }
+    }
 }
 
 //----------------------------------------------------------------------------//
@@ -79,11 +92,12 @@ impl CachedStats {
 pub enum UpstreamMessage {
     Revoked {expense: Expense},
     NewSpending {expense: Expense, temp_alias: Uuid},
+    InitStats {lifetime_stats: CachedStats, recent_expenses: Vec<Expense>}
 }
 #[derive(Clone, Deserialize, Serialize)]
 pub enum DownstreamMessage {
     Revoked {expense_id: Uuid},
-    MadeExpense {info: ClientData, temp_alias: Uuid}
+    MadeExpense {info: ClientData, temp_alias: Uuid},
 }
 
 
@@ -93,7 +107,7 @@ pub trait Upstream {
     
     /// Lifetime stats, month stats, at least month's worth of RECENTMOST
     /// confirmed expenses.
-    fn take_init(&mut self) -> (CachedStats, CachedStats, Vec<Expense>);
+    fn take_init(&mut self) -> Option<(CachedStats, CachedStats, Vec<Expense>)>;
 }
 
 
@@ -138,8 +152,8 @@ impl Upstream for PseudoUpstream {
         */
         v
     }
-    fn take_init(&mut self) -> (CachedStats, CachedStats, Vec<Expense>) {
-        Default::default()
+    fn take_init(&mut self) -> Option<(CachedStats, CachedStats, Vec<Expense>)> {
+        Some(Default::default())
     }
 }
 
