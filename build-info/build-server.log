@@ -28,4 +28,4 @@ warning: methods `submit`, `sync`, and `take_init` are never used
     |        ^^^^^^^^^
 
 warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.08s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s

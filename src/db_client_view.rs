@@ -48,7 +48,7 @@ pub struct DbView<U: Upstream> {
 
 impl<U: Upstream> DbView<U> {
     pub fn with(mut upstream: U) -> Self {
-        let (life_stats, month_stats, live_records) = upstream.take_init();
+        let (life_stats, month_stats, live_records) = upstream.take_init().unwrap_or_default();
         
         let mut live_records_map = LiqueMap::new();
         for exp in live_records {
@@ -82,7 +82,10 @@ impl<U: Upstream> DbView<U> {
                 }
                 UpstreamMessage::NewSpending { expense, temp_alias } => {
                     self.apply_confirmed(expense, temp_alias, liveline);
-                }
+                },
+                UpstreamMessage::InitStats { .. } => {
+                    // this message is not meant to us; we might do sanity checks, though
+                },
             }
         }
     }
