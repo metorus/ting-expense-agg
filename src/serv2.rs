@@ -1,10 +1,11 @@
-use axum::extract::{State, Extension, Request, ws::{CloseFrame, Message, close_code}};
+use axum::extract::{State, Extension, Path, Request, ws::{CloseFrame, Message, close_code}};
 use axum_extra::extract::{cookie::{Key, Cookie, SameSite}, SignedCookieJar};
 use axum::{extract::WebSocketUpgrade, response::IntoResponse};
 use axum::{routing::{get, post}, Router, RequestExt};
 use axum::middleware::map_request_with_state;
 use tokio::sync::broadcast::error::RecvError;
 use postcard::{to_stdvec, from_bytes};
+use tokio::sync::oneshot::Sender;
 use axum::response::Redirect;
 use tokio::net::TcpListener;
 use axum::http::HeaderMap;
@@ -20,15 +21,41 @@ use crate::dbs2::MultiuserDb;
 pub struct UserAuth(String);
 
 
-pub async fn simple_login(
-    Extension(jar): Extension<SignedCookieJar>,
-    principal: String
-) -> impl IntoResponse {
+fn logon_cookie(principal: String) -> Cookie<'static> {
     let mut login_cookie = Cookie::new("user", principal);
     login_cookie.set_path("/");
     login_cookie.set_same_site(Some(SameSite::Strict));
     login_cookie.set_http_only(true);
-    (jar.add(login_cookie), Redirect::to("/")).into_response()
+    login_cookie
+}
+
+
+pub async fn login(
+    State(db): State<Arc<MultiuserDb>>,
+    Extension(jar): Extension<SignedCookieJar>,
+    Path(device): Path<String>,
+    totp: String
+) -> impl IntoResponse {
+    let principal = db.login_impl(&device, &totp).await.map_err(|e| e.to_string())?;
+    Ok::<_, String>((jar.add(logon_cookie(principal)), Redirect::to("/api/me")))
+}
+pub async fn register(
+    State(db): State<Arc<MultiuserDb>>,
+    Extension(jar): Extension<SignedCookieJar>,
+    maybe_auth: Option<Extension<UserAuth>>,
+    Path(device): Path<String>,
+    principal_reg: Option<String>
+) -> impl IntoResponse {
+    let (totp, principal) = match (maybe_auth, principal_reg) {
+        (Some(Extension(UserAuth(principal))), None) => {
+            (db.register_from(&principal, &device).await.map_err(|e| e.to_string())?, principal)
+        },
+        (None, Some(principal)) => {
+            (db.register_impl(&device, &principal).await.map_err(|e| e.to_string())?, principal)
+        },
+        _ => return Err("cannot register in name of other principal when logged in".to_owned()),
+    };
+    Ok((jar.add(logon_cookie(principal)), totp))
 }
 pub async fn handle_me(
     maybe_principal: Option<Extension<UserAuth>>,
@@ -128,12 +155,19 @@ pub async fn handle_websocket(
 }
 
 
-pub async fn serve_forever(bind_ip: &'static str, session_signing_key: Vec<u8>) {
+pub async fn serve_forever(bind_ip: &'static str, session_signing_key: Vec<u8>,
+        root_key_out: Option<Sender<(&'static str, Vec<u8>)>>) {
     let db = Arc::new(MultiuserDb::mem_new());
     let session_signing_key = Key::from(&session_signing_key);
     
+    if let Some(sender) = root_key_out {
+        let root_totp = db.register_impl("root", "root").await.expect("root registration fault");
+        let _ = sender.send(("root", root_totp));
+    }
+    
     let app = Router::new()
-        .route("/api/login", post(simple_login))
+        .route("/api/register", post(register))
+        .route("/api/login", post(login))
         .route("/api/me", get(handle_me))
         .route("/ws", get(handle_websocket))
         .with_state(db)

@@ -1,3 +1,91 @@
+   Compiling cc v1.2.19
+   Compiling indexmap v2.7.0
+   Compiling futures-channel v0.3.31
+   Compiling subtle v2.6.1
+   Compiling tokio v1.44.1
+   Compiling idna v1.0.3
+   Compiling openssl v0.10.72
+   Compiling foreign-types-shared v0.1.1
+   Compiling openssl-macros v0.1.1
+   Compiling try-lock v0.2.5
+   Compiling native-tls v0.2.14
+   Compiling foreign-types v0.3.2
+   Compiling digest v0.10.7
+   Compiling want v0.3.1
+   Compiling getrandom v0.3.2
+   Compiling cookie v0.18.1
+   Compiling serde_json v1.0.134
+   Compiling futures-util v0.3.31
+   Compiling openssl-probe v0.1.6
+   Compiling sha1 v0.10.6
+   Compiling rand_core v0.9.3
+   Compiling psl-types v2.0.11
+   Compiling zerocopy v0.8.24
+   Compiling zeroize_derive v1.4.2
+   Compiling rand_chacha v0.9.0
+   Compiling url v2.5.4
+   Compiling toml_edit v0.22.22
+   Compiling publicsuffix v2.3.0
+   Compiling sync_wrapper v1.0.2
+   Compiling rustls-pki-types v1.11.0
+   Compiling zeroize v1.8.1
+   Compiling webbrowser v1.0.3
+   Compiling hmac v0.12.1
+   Compiling sha2 v0.10.8
+   Compiling serde_urlencoded v0.7.1
+   Compiling base32 v0.5.1
+   Compiling cookie_store v0.21.1
+   Compiling rustls-pemfile v2.2.0
+   Compiling constant_time_eq v0.3.1
+   Compiling ipnet v2.11.0
+   Compiling wayland-backend v0.3.7
+   Compiling openssl-sys v0.9.107
+   Compiling libsqlite3-sys v0.31.0
+   Compiling rand v0.9.0
+   Compiling totp-rs v5.7.0
+   Compiling wayland-client v0.31.7
+   Compiling wayland-csd-frame v0.3.0
+   Compiling proc-macro-crate v3.2.0
+   Compiling http-body-util v0.1.2
+   Compiling futures-executor v0.3.31
+   Compiling zvariant_derive v4.2.0
+   Compiling zbus_macros v4.4.0
+   Compiling futures v0.3.31
+   Compiling zvariant v4.2.0
+   Compiling tokio-util v0.7.14
+   Compiling tower v0.5.2
+   Compiling tokio-stream v0.1.17
+   Compiling wayland-protocols v0.32.5
+   Compiling calloop-wayland-source v0.3.0
+   Compiling wayland-cursor v0.31.7
+   Compiling h2 v0.4.9
+   Compiling zbus_names v3.0.0
+   Compiling tokio-native-tls v0.3.1
+   Compiling zbus_xml v4.0.0
+   Compiling zbus v4.4.0
+   Compiling zbus-lockstep v0.4.4
+   Compiling hyper v1.5.2
+   Compiling zbus-lockstep-macros v0.4.4
+   Compiling hyper-util v0.1.10
+   Compiling wayland-protocols-wlr v0.3.5
+   Compiling wayland-protocols-plasma v0.3.5
+   Compiling hyper-tls v0.6.0
+   Compiling reqwest v0.12.15
+   Compiling smithay-client-toolkit v0.19.2
+   Compiling rusqlite v0.33.0
+   Compiling sctk-adwaita v0.10.1
+   Compiling smithay-clipboard v0.7.2
+   Compiling winit v0.30.7
+   Compiling atspi-common v0.6.0
+   Compiling glutin-winit v0.5.0
+   Compiling atspi-proxies v0.6.0
+   Compiling accesskit_atspi_common v0.10.1
+   Compiling atspi-connection v0.6.0
+   Compiling atspi v0.22.0
+   Compiling accesskit_unix v0.13.1
+   Compiling accesskit_winit v0.23.1
+   Compiling egui-winit v0.30.0
+   Compiling eframe v0.30.0
    Compiling ting-expense-a v0.2.0 (/home/tigr/SeriousSoft/Rusty/ting-expense-a)
 warning: methods `life_transactions_info` and `life_pie` are never used
    --> src/db_client_view.rs:133:12
@@ -25,44 +113,5 @@ warning: associated items `new` and `set_indices` are never used
 81 |     pub fn set_indices(&mut self) {
    |            ^^^^^^^^^^^
 
-warning: struct `MultiuserDb` is never constructed
-  --> src/dbs2.rs:12:12
-   |
-12 | pub struct MultiuserDb {
-   |            ^^^^^^^^^^^
-
-warning: associated items `mem_new`, `submit_expense`, `submit_revoke`, `subscribe`, and `load` are never used
-   --> src/dbs2.rs:18:12
-    |
-17  | impl MultiuserDb {
-    | ---------------- associated items in this implementation
-18  |     pub fn mem_new() -> Self {
-    |            ^^^^^^^
-...
-49  |     pub async fn submit_expense(&self, principal: &str, d: ClientData, temp_alias: Uuid) -> Result<Expense> {
-    |                  ^^^^^^^^^^^^^^
-...
-78  |     pub async fn submit_revoke(&self, principal: &str, total_id: Uuid) -> Result<Expense> {
-    |                  ^^^^^^^^^^^^^
-...
-112 |     pub async fn subscribe(&self, principal: String) -> broadcast::Receiver<UpstreamMessage> {
-    |                  ^^^^^^^^^
-...
-120 |     pub async fn load(&self, principal: &str) -> Result<()> {
-    |                  ^^^^
-
-warning: unused `Result` that must be used
-  --> src/main.rs:17:5
-   |
-17 |     graphics::run_app(db);
-   |     ^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: this `Result` may be an `Err` variant, which should be handled
-   = note: `#[warn(unused_must_use)]` on by default
-help: use `let _ = ...` to ignore the resulting value
-   |
-17 |     let _ = graphics::run_app(db);
-   |     +++++++
-
-warning: `ting-expense-a` (bin "ting-expense-a") generated 5 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.87s
+warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 19.72s
