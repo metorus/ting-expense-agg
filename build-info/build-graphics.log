@@ -65,4 +65,4 @@ help: use `let _ = ...` to ignore the resulting value
    |     +++++++
 
 warning: `ting-expense-a` (bin "ting-expense-a") generated 5 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.83s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.87s

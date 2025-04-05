@@ -1,9 +1,13 @@
-use axum::extract::{State, Extension, ws::{CloseFrame, Message, close_code}};
+use axum::extract::{State, Extension, Request, ws::{CloseFrame, Message, close_code}};
+use axum_extra::extract::{cookie::{Key, Cookie, SameSite}, SignedCookieJar};
 use axum::{extract::WebSocketUpgrade, response::IntoResponse};
+use axum::{routing::{get, post}, Router, RequestExt};
+use axum::middleware::map_request_with_state;
 use tokio::sync::broadcast::error::RecvError;
 use postcard::{to_stdvec, from_bytes};
-use axum::{routing::get, Router};
+use axum::response::Redirect;
 use tokio::net::TcpListener;
+use axum::http::HeaderMap;
 use futures::*;
 
 use std::sync::Arc;
@@ -14,6 +18,23 @@ use crate::dbs2::MultiuserDb;
 
 #[derive(Clone)]
 pub struct UserAuth(String);
+
+
+pub async fn simple_login(
+    Extension(jar): Extension<SignedCookieJar>,
+    principal: String
+) -> impl IntoResponse {
+    let mut login_cookie = Cookie::new("user", principal);
+    login_cookie.set_path("/");
+    login_cookie.set_same_site(Some(SameSite::Strict));
+    login_cookie.set_http_only(true);
+    (jar.add(login_cookie), Redirect::to("/")).into_response()
+}
+pub async fn handle_me(
+    maybe_principal: Option<Extension<UserAuth>>,
+) -> String {
+    maybe_principal.map(|e| e.0.0).unwrap_or(String::new())
+}
 
 
 pub async fn handle_websocket(
@@ -107,12 +128,26 @@ pub async fn handle_websocket(
 }
 
 
-pub async fn serve_forever(bind_ip: &'static str) {
+pub async fn serve_forever(bind_ip: &'static str, session_signing_key: Vec<u8>) {
     let db = Arc::new(MultiuserDb::mem_new());
+    let session_signing_key = Key::from(&session_signing_key);
+    
     let app = Router::new()
-        // .route("/api/login", get(|| async { "todo" }))
+        .route("/api/login", post(simple_login))
+        .route("/api/me", get(handle_me))
         .route("/ws", get(handle_websocket))
         .with_state(db)
+        .layer(map_request_with_state(session_signing_key,
+            |State(key): State<Key>, mut request: Request<_>| async {
+                let Ok(headers) = request.extract_parts::<HeaderMap>().await;
+                let jar = SignedCookieJar::from_headers(&headers, key);
+                
+                if let Some(c) = jar.get("user") {
+                    request.extensions_mut().insert(UserAuth(c.value().to_owned()));
+                }
+                request.extensions_mut().insert(jar);
+                request
+            }))
         .route("/", get("Hello, World!"));
 
     let listener = TcpListener::bind(bind_ip).await.unwrap();

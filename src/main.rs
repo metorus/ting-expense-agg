@@ -20,7 +20,7 @@ fn main() {
 #[cfg(all(feature = "graphics", feature = "server"))]
 #[tokio::main]
 async fn main() {
-    tokio::task::spawn(serv2::serve_forever("0.0.0.0:4341"));
+    tokio::task::spawn(serv2::serve_forever("0.0.0.0:4341", vec![1_u8; 64]));
     let db: dbs::SingleUserSqlite = todo!();
     graphics::run_app(db);
 }
@@ -29,6 +29,6 @@ async fn main() {
 #[tokio::main]
 async fn main() {
     println!("Will serve on 0.0.0.0:4341.");
-    serv2::serve_forever("0.0.0.0:4341").await;
+    serv2::serve_forever("0.0.0.0:4341", vec![1_u8; 64]).await;
 }
 
