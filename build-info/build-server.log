@@ -1,61 +1,4 @@
-   Compiling zerocopy v0.7.35
-   Compiling serde v1.0.219
-   Compiling futures-util v0.3.31
-   Compiling tokio v1.44.1
-   Compiling openssl-sys v0.9.107
-   Compiling icu_normalizer v1.5.0
-   Compiling getrandom v0.3.2
-   Compiling rand_core v0.9.3
-   Compiling ppv-lite86 v0.2.20
-   Compiling idna_adapter v1.2.0
-   Compiling idna v1.0.3
-   Compiling rand_chacha v0.3.1
-   Compiling rand_chacha v0.9.0
-   Compiling openssl v0.10.72
-   Compiling url v2.5.4
-   Compiling publicsuffix v2.3.0
-   Compiling rand v0.9.0
-   Compiling rand v0.8.5
-   Compiling totp-rs v5.7.0
-   Compiling tungstenite v0.24.0
-   Compiling deranged v0.3.11
-   Compiling serde_json v1.0.134
-   Compiling serde_urlencoded v0.7.1
-   Compiling serde_path_to_error v0.1.16
-   Compiling heapless v0.7.17
-   Compiling uuid v1.11.0
-   Compiling http-body-util v0.1.2
-   Compiling futures-executor v0.3.31
-   Compiling multer v3.1.0
-   Compiling futures v0.3.31
-   Compiling axum-core v0.4.5
-   Compiling postcard v1.1.1
-   Compiling time v0.3.37
-   Compiling native-tls v0.2.14
-   Compiling tokio-util v0.7.14
-   Compiling tower v0.5.2
-   Compiling tokio-tungstenite v0.24.0
-   Compiling tokio-stream v0.1.17
-   Compiling tokio-native-tls v0.3.1
-   Compiling h2 v0.4.9
-   Compiling cookie v0.18.1
-   Compiling rusqlite v0.33.0
-   Compiling cookie_store v0.21.1
-   Compiling hyper v1.5.2
-   Compiling hyper-util v0.1.10
-   Compiling axum v0.7.9
-   Compiling hyper-tls v0.6.0
-   Compiling reqwest v0.12.15
-   Compiling axum-extra v0.9.6
    Compiling ting-expense-a v0.2.0 (/home/tigr/SeriousSoft/Rusty/ting-expense-a)
-warning: constant `MONTH_LIKE` is never used
-  --> src/crosstyping.rs:10:11
-   |
-10 | pub const MONTH_LIKE: Duration = Duration::days(30);
-   |           ^^^^^^^^^^
-   |
-   = note: `#[warn(dead_code)]` on by default
-
 warning: method `raw_add` is never used
   --> src/crosstyping.rs:58:12
    |
@@ -63,19 +6,14 @@ warning: method `raw_add` is never used
    | ---------------- method in this implementation
 58 |     pub fn raw_add(&mut self, category: &str, amount: i64, d: isize) {
    |            ^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
 
-warning: methods `submit`, `sync`, and `take_init` are never used
-   --> src/crosstyping.rs:105:8
+warning: trait `Upstream` is never used
+   --> src/crosstyping.rs:104:11
     |
 104 | pub trait Upstream {
-    |           -------- methods in this trait
-105 |     fn submit(&mut self, d: DownstreamMessage);
-    |        ^^^^^^
-106 |     fn sync(&mut self) -> Vec<UpstreamMessage>;
-    |        ^^^^
-...
-110 |     fn take_init(&mut self) -> Option<(CachedStats, CachedStats, Vec<Expense>)>;
-    |        ^^^^^^^^^
+    |           ^^^^^^^^
 
-warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 13.04s
+warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.61s

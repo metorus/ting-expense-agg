@@ -7,12 +7,12 @@ use totp_rs::{Algorithm, TOTP};
 use std::collections::HashMap;
 use uuid::Uuid;
 
-use crate::crosstyping::{UpstreamMessage, Expense, CachedStats, ClientData, Metadata};
+use crate::crosstyping::*;
 
 
 pub struct MultiuserDb {
     conn: Mutex<Connection>,
-    clients_notify_updates: RwLock<HashMap<String, broadcast::Sender<UpstreamMessage>>>
+    clients_notify_updates: RwLock<HashMap<String, broadcast::Sender<ClientboundUpdate>>>
 }
 
 impl MultiuserDb {
@@ -113,7 +113,7 @@ INSERT INTO spending_records(amount_indivisible, spend_group, principal) VALUES(
         
         // if there are WebSockets or SSEs connected, we must notify them
         if let Some(s) = self.clients_notify_updates.read().await.get(principal) {
-            let _ = s.send(UpstreamMessage::NewSpending {
+            let _ = s.send(ClientboundUpdate::NewSpending {
                 expense: expense.clone(), temp_alias
             });
         }
@@ -148,7 +148,7 @@ UPDATE spending_records SET revoked = TRUE WHERE principal = ?1 AND id = ?2
         
         // if there are WebSockets or SSEs connected, we must notify them
         if let Some(s) = self.clients_notify_updates.read().await.get(principal) {
-            let _ = s.send(UpstreamMessage::Revoked {
+            let _ = s.send(ClientboundUpdate::Revoked {
                 expense: expense.clone()
             });
         }
@@ -156,7 +156,7 @@ UPDATE spending_records SET revoked = TRUE WHERE principal = ?1 AND id = ?2
         Ok(expense)
     }
     
-    pub async fn subscribe(&self, principal: String) -> broadcast::Receiver<UpstreamMessage> {
+    pub async fn subscribe(&self, principal: String) -> broadcast::Receiver<ClientboundUpdate> {
         let mut clients = self.clients_notify_updates.write().await;
         clients
             .entry(principal)
@@ -186,6 +186,10 @@ UPDATE spending_records SET revoked = TRUE WHERE principal = ?1 AND id = ?2
         )?.filter_map(|r| r.ok()).collect::<Vec<_>>();
         let lifetime_stats = CachedStats::new(lifetime_gen, lifetime_grouped);
         
+        if MONTH_LIKE != time::Duration::days(30) {
+            eprintln!("code was refactored and now accumulates data for non-30-day interval");
+            eprintln!("please fix src/server/sqlite.rs : MultiUserDb::load too");
+        }
         let recent_expenses: Vec<Expense> = conn.prepare(
             "SELECT id, principal, unix_date, amount_indivisible, spend_group, revoked 
              FROM spending_records 
@@ -211,7 +215,7 @@ UPDATE spending_records SET revoked = TRUE WHERE principal = ?1 AND id = ?2
         
         // if there are WebSockets or SSEs connected, we must notify them
         if let Some(s) = self.clients_notify_updates.read().await.get(principal) {
-            let _ = s.send(UpstreamMessage::InitStats {lifetime_stats, recent_expenses});
+            let _ = s.send(ClientboundUpdate::InitStats {lifetime_stats, recent_expenses});
         }
         Ok(())
     }

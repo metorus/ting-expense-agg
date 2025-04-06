@@ -1,15 +1,14 @@
 // #[sides(client)]
 
-use time::format_description::well_known::Rfc3339;
+
 use egui::{*, FontFamily::Proportional, FontId};
 use eframe::{App, CreationContext};
 
 use std::collections::BTreeMap;
 
 use crate::crosstyping::{ClientData, Upstream};
-use crate::db_client_view::{DbView, MayLoad};
-use crate::ecs::expense_category_slider;
-use crate::pie::pie_chart_with_legend;
+use crate::db_slice::DbView;
+use crate::widgets::*;
 
 
 const CATEGORIES: [(&'static str, Color32, Option<&'static str>); 5] = [
@@ -26,22 +25,6 @@ fn color_cat(a: &str) -> Color32 {
         "transport" => Color32::ORANGE,
         _           => Color32::GOLD,
     }
-}
-
-
-/// Creates a representation of given Ok(expense) or Err(fact that it's not
-/// loaded yet) on given ui, using single widget.
-fn show_mayload(ui: &mut Ui, ml: MayLoad<'_>) {
-    use MayLoad::*;
-    
-    match ml {
-        Confirmed(e) => ui.monospace(e.to_string()),
-        NotLoaded    => ui.monospace("------------------------------"),
-        Provisional{data, temp_time} =>
-            ui.monospace(format!("[LOCAL!] - {} - {}P on {}",
-                temp_time.format(&Rfc3339).unwrap(),
-                data.amount, data.group.as_deref().unwrap_or("something"))),
-    };
 }
 
 
@@ -195,8 +178,7 @@ impl<U: Upstream> Trac<U> {
                     }
                     ui.add_space(12.0);
                     
-                    self.db.load_last_spendings(6)
-                           .for_each(|ml| show_mayload(ui, ml));
+                    self.db.load_last_spendings(6).for_each(|ml| show_spending_mayload(ui, ml));
                 });
             });
         
@@ -245,7 +227,7 @@ impl<U: Upstream> Trac<U> {
                         self.db.total_live_transactions(),
                         |ui, range| {
                             self.db.load_some_spendings(range.start, range.end)
-                                .for_each(|ml| show_mayload(ui, ml));
+                                .for_each(|ml| show_spending_mayload(ui, ml));
                         });
                 });
             });

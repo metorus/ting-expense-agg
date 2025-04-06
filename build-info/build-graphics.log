@@ -1,94 +1,56 @@
-   Compiling cc v1.2.19
-   Compiling indexmap v2.7.0
-   Compiling futures-channel v0.3.31
-   Compiling subtle v2.6.1
-   Compiling tokio v1.44.1
-   Compiling idna v1.0.3
-   Compiling openssl v0.10.72
-   Compiling foreign-types-shared v0.1.1
-   Compiling openssl-macros v0.1.1
-   Compiling try-lock v0.2.5
-   Compiling native-tls v0.2.14
-   Compiling foreign-types v0.3.2
-   Compiling digest v0.10.7
-   Compiling want v0.3.1
-   Compiling getrandom v0.3.2
-   Compiling cookie v0.18.1
-   Compiling serde_json v1.0.134
-   Compiling futures-util v0.3.31
-   Compiling openssl-probe v0.1.6
-   Compiling sha1 v0.10.6
-   Compiling rand_core v0.9.3
-   Compiling psl-types v2.0.11
-   Compiling zerocopy v0.8.24
-   Compiling zeroize_derive v1.4.2
-   Compiling rand_chacha v0.9.0
-   Compiling url v2.5.4
-   Compiling toml_edit v0.22.22
-   Compiling publicsuffix v2.3.0
-   Compiling sync_wrapper v1.0.2
-   Compiling rustls-pki-types v1.11.0
-   Compiling zeroize v1.8.1
-   Compiling webbrowser v1.0.3
-   Compiling hmac v0.12.1
-   Compiling sha2 v0.10.8
-   Compiling serde_urlencoded v0.7.1
-   Compiling base32 v0.5.1
-   Compiling cookie_store v0.21.1
-   Compiling rustls-pemfile v2.2.0
-   Compiling constant_time_eq v0.3.1
-   Compiling ipnet v2.11.0
-   Compiling wayland-backend v0.3.7
-   Compiling openssl-sys v0.9.107
-   Compiling libsqlite3-sys v0.31.0
-   Compiling rand v0.9.0
-   Compiling totp-rs v5.7.0
-   Compiling wayland-client v0.31.7
-   Compiling wayland-csd-frame v0.3.0
-   Compiling proc-macro-crate v3.2.0
-   Compiling http-body-util v0.1.2
-   Compiling futures-executor v0.3.31
-   Compiling zvariant_derive v4.2.0
-   Compiling zbus_macros v4.4.0
-   Compiling futures v0.3.31
-   Compiling zvariant v4.2.0
-   Compiling tokio-util v0.7.14
-   Compiling tower v0.5.2
-   Compiling tokio-stream v0.1.17
-   Compiling wayland-protocols v0.32.5
-   Compiling calloop-wayland-source v0.3.0
-   Compiling wayland-cursor v0.31.7
-   Compiling h2 v0.4.9
-   Compiling zbus_names v3.0.0
-   Compiling tokio-native-tls v0.3.1
-   Compiling zbus_xml v4.0.0
-   Compiling zbus v4.4.0
-   Compiling zbus-lockstep v0.4.4
-   Compiling hyper v1.5.2
-   Compiling zbus-lockstep-macros v0.4.4
-   Compiling hyper-util v0.1.10
-   Compiling wayland-protocols-wlr v0.3.5
-   Compiling wayland-protocols-plasma v0.3.5
-   Compiling hyper-tls v0.6.0
-   Compiling reqwest v0.12.15
-   Compiling smithay-client-toolkit v0.19.2
-   Compiling rusqlite v0.33.0
-   Compiling sctk-adwaita v0.10.1
-   Compiling smithay-clipboard v0.7.2
-   Compiling winit v0.30.7
-   Compiling atspi-common v0.6.0
-   Compiling glutin-winit v0.5.0
-   Compiling atspi-proxies v0.6.0
-   Compiling accesskit_atspi_common v0.10.1
-   Compiling atspi-connection v0.6.0
-   Compiling atspi v0.22.0
-   Compiling accesskit_unix v0.13.1
-   Compiling accesskit_winit v0.23.1
-   Compiling egui-winit v0.30.0
-   Compiling eframe v0.30.0
-   Compiling ting-expense-a v0.2.0 (/home/tigr/SeriousSoft/Rusty/ting-expense-a)
+   Compiling ting-expense-a v0.2.=== Building graphics,selfhost ===
+g-expense-a)
+warning: associated items `with`, `life_transactions_info`, and `life_pie` are never used
+   --> src/db_slice.rs:50:12
+    |
+49  | impl<U: Upstream> DbView<U> {
+    | --------------------------- associated items in this implementation
+50  |     pub fn with(mut upstream: U) -> Self {
+    |            ^^^^
+...
+133 |     pub fn life_transactions_info(&mut self) -> (u64, usize) {
+    |            ^^^^^^^^^^^^^^^^^^^^^^
+...
+147 |     pub fn life_pie(&mut self) -> &[(String, u64)] {
+    |            ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: variant `Main` is never constructed
+  --> src/graphics.rs:61:5
+   |
+60 | enum CurScreen {
+   |      --------- variant in this enum
+61 |     Main(MainForm),
+   |     ^^^^
+
+warning: associated function `new` is never used
+  --> src/graphics.rs:76:12
+   |
+75 | impl<U: Upstream> Trac<U> {
+   | ------------------------- associated function in this implementation
+76 |     pub fn new(cc: &CreationContext<'_>, db: U) -> Self {
+   |            ^^^
+
+warning: function `run_app` is never used
+   --> src/graphics.rs:274:8
+    |
+274 | pub fn run_app(db: impl Upstream) -> eframe::Result {
+    |        ^^^^^^^
+
+warning: method `take_init` is never used
+   --> src/crosstyping.rs:110:8
+    |
+104 | pub trait Upstream {
+    |           -------- method in this trait
+...
+110 |     fn take_init(&mut self) -> Option<(CachedStats, CachedStats, Vec<Expense>)>;
+    |        ^^^^^^^^^
+
+warning: `ting-expense-a` (bin "ting-expense-a") generated 5 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.73s
 warning: methods `life_transactions_info` and `life_pie` are never used
-   --> src/db_client_view.rs:133:12
+   --> src/db_slice.rs:133:12
     |
 49  | impl<U: Upstream> DbView<U> {
     | --------------------------- methods in this implementation
@@ -114,4 +76,4 @@ warning: associated items `new` and `set_indices` are never used
    |            ^^^^^^^^^^^
 
 warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 19.72s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.14s

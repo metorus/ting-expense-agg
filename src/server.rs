@@ -9,12 +9,13 @@ use tokio::sync::oneshot::Sender;
 use axum::response::Redirect;
 use tokio::net::TcpListener;
 use axum::http::HeaderMap;
+use std::sync::Arc;
 use futures::*;
 
-use std::sync::Arc;
 
-use crate::crosstyping::DownstreamMessage;
-use crate::dbs2::MultiuserDb;
+use crate::crosstyping::ServerboundUpdate;
+use sqlite::MultiuserDb;
+mod sqlite;
 
 
 #[derive(Clone)]
@@ -131,9 +132,9 @@ pub async fn handle_websocket(
                 };
                 
                 if let Err(e) = match serverbound_req {
-                    DownstreamMessage::MadeExpense{info, temp_alias} =>
+                    ServerboundUpdate::MadeExpense{info, temp_alias} =>
                       db.submit_expense(&principal, info, temp_alias).await,
-                    DownstreamMessage::Revoked{expense_id} =>
+                    ServerboundUpdate::Revoked{expense_id} =>
                       db.submit_revoke(&principal, expense_id).await
                 } {
                     eprintln!("Database operation failed: {e:?}");

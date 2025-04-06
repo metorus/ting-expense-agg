@@ -43,6 +43,7 @@ totp-rs = { version = "5.7.0", features = ["gen_secret", "zeroize"] }
 [features]
 server = ["dep:axum", "dep:axum-extra"]
 graphics = ["dep:eframe", "dep:egui"]
+selfhost = []
 default  = []
 
 # Remember about

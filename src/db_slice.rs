@@ -5,7 +5,7 @@ use liquemap::LiqueMap;
 use uuid::Uuid;
 
 use crate::crosstyping::{CachedStats, ClientData, Expense, MONTH_LIKE};
-use crate::crosstyping::{Upstream, UpstreamMessage, DownstreamMessage};
+use crate::crosstyping::{Upstream, ClientboundUpdate, ServerboundUpdate};
 
 
 const UNCLASSIFIED: &str = "unclassified";
@@ -77,13 +77,13 @@ impl<U: Upstream> DbView<U> {
         let liveline = self.keep_month();
         for msg in self.upstream.sync() {
             match msg {
-                UpstreamMessage::Revoked { expense } => {
+                ClientboundUpdate::Revoked { expense } => {
                     self.handle_revocation(expense, liveline);
                 }
-                UpstreamMessage::NewSpending { expense, temp_alias } => {
+                ClientboundUpdate::NewSpending { expense, temp_alias } => {
                     self.apply_confirmed(expense, temp_alias, liveline);
                 },
-                UpstreamMessage::InitStats { .. } => {
+                ClientboundUpdate::InitStats { .. } => {
                     // this message is not meant to us; we might do sanity checks, though
                 },
             }
@@ -194,7 +194,7 @@ impl<U: Upstream> DbView<U> {
         self.month_stats.raw_add(c.group.as_deref().unwrap_or(UNCLASSIFIED), c.amount as i64, 1);
         
         self.live_records.insert(RecordViewKey::Provisional(temp_alias), RecordViewValue::Provisional(c.clone(), now));
-        self.upstream.submit(DownstreamMessage::MadeExpense {
+        self.upstream.submit(ServerboundUpdate::MadeExpense {
             info: c,
             temp_alias,
         });
