@@ -4,11 +4,7 @@ use time::OffsetDateTime;
 use liquemap::LiqueMap;
 use uuid::Uuid;
 
-use crate::crosstyping::{CachedStats, ClientData, Expense, MONTH_LIKE};
-use crate::crosstyping::{Upstream, ClientboundUpdate, ServerboundUpdate};
-
-
-const UNCLASSIFIED: &str = "unclassified";
+use crate::crosstyping::*;
 
 
 
@@ -110,14 +106,9 @@ impl<U: Upstream> DbView<U> {
         let remove_pos = RecordViewKey::Provisional(temp_alias);
         let was_foreign = self.live_records.remove(&remove_pos).is_none();
         if was_foreign {
-            let amount = expense.client.amount;
-            let group = &expense.client.group;
-            
-            self.life_stats.raw_add(group.as_deref()
-                .unwrap_or(UNCLASSIFIED), amount as i64, 1);
+            self.life_stats.add(&expense);
             if expense.server.time >= liveline {
-                self.month_stats.raw_add(group.as_deref()
-                    .unwrap_or(UNCLASSIFIED), amount as i64, 1);
+                self.month_stats.add(&expense);
             }
         }
 

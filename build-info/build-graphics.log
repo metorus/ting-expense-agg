@@ -1,87 +1,59 @@
    Compiling ting-expense-a v0.3.=== Building graphics,selfhost ===
 g-expense-a)
-warning: unused imports: `Cookie` and `header::HeaderValue`
- --> src/remotehost.rs:3:29
-  |
-3 | use reqwest::{cookie::{Jar, Cookie, CookieStore}, Client, header::HeaderValue, Response};
-  |                             ^^^^^^                        ^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default
-
-warning: unused import: `from_bytes`
- --> src/remotehost.rs:6:27
-  |
-6 | use postcard::{to_stdvec, from_bytes};
-  |                           ^^^^^^^^^^
-
-warning: unused import: `axum::response::Redirect`
- --> src/server.rs:9:5
-  |
-9 | use axum::response::Redirect;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused variable: `down_tx`
-  --> src/remotehost.rs:36:14
-   |
-36 |         let (down_tx, down) = mpsc::unbounded_channel();
-   |              ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_down_tx`
-   |
-   = note: `#[warn(unused_variables)]` on by default
-
-warning: unused variable: `init_data_tx`
-  --> src/remotehost.rs:38:13
-   |
-38 |         let init_data_tx = Some(init_data_tx);
-   |             ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_init_data_tx`
-
-warning: unused variable: `m`
-  --> src/remotehost.rs:44:41
-   |
-44 |                     let Message::Binary(m) = msg else {continue};
-   |                                         ^ help: if this is intentional, prefix it with an underscore: `_m`
-
 warning: methods `life_transactions_info` and `life_pie` are never used
-   --> src/db_slice.rs:133:12
+   --> src/db_slice.rs:124:12
     |
-49  | impl<U: Upstream> DbView<U> {
+45  | impl<U: Upstream> DbView<U> {
     | --------------------------- methods in this implementation
 ...
-133 |     pub fn life_transactions_info(&mut self) -> (u64, usize) {
+124 |     pub fn life_transactions_info(&mut self) -> (u64, usize) {
     |            ^^^^^^^^^^^^^^^^^^^^^^
 ...
-147 |     pub fn life_pie(&mut self) -> &[(String, u64)] {
+138 |     pub fn life_pie(&mut self) -> &[(String, u64)] {
     |            ^^^^^^^^
     |
     = note: `#[warn(dead_code)]` on by default
 
-warning: `ting-expense-a` (bin "ting-expense-a") generated 7 warnings (run `cargo fix --bin "ting-expense-a"` to apply 3 suggestions)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.53s
+warning: method `sub` is never used
+  --> src/crosstyping.rs:78:12
+   |
+58 | impl CachedStats {
+   | ---------------- method in this implementation
+...
+78 |     pub fn sub(&mut self, e: &Expense) {
+   |            ^^^
+
+warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.63s
    Compiling ting-expense-a v0.3.0 (/home/tigr/SeriousSoft/Rusty/ting-expense-a)
 warning: methods `life_transactions_info` and `life_pie` are never used
-   --> src/db_slice.rs:133:12
+   --> src/db_slice.rs:124:12
     |
-49  | impl<U: Upstream> DbView<U> {
+45  | impl<U: Upstream> DbView<U> {
     | --------------------------- methods in this implementation
 ...
-133 |     pub fn life_transactions_info(&mut self) -> (u64, usize) {
+124 |     pub fn life_transactions_info(&mut self) -> (u64, usize) {
     |            ^^^^^^^^^^^^^^^^^^^^^^
 ...
-147 |     pub fn life_pie(&mut self) -> &[(String, u64)] {
+138 |     pub fn life_pie(&mut self) -> &[(String, u64)] {
     |            ^^^^^^^^
     |
     = note: `#[warn(dead_code)]` on by default
 
-warning: associated items `new` and `set_indices` are never used
-  --> src/crosstyping.rs:74:12
+warning: associated items `sub`, `new`, and `set_indices` are never used
+  --> src/crosstyping.rs:78:12
    |
-57 | impl CachedStats {
+58 | impl CachedStats {
    | ---------------- associated items in this implementation
 ...
-74 |     pub fn new(records: (u64, usize), group_spendings: Vec<(String, u64)>) -> Self {
+78 |     pub fn sub(&mut self, e: &Expense) {
    |            ^^^
 ...
-81 |     pub fn set_indices(&mut self) {
+82 |     pub fn new(records: (u64, usize), group_spendings: Vec<(String, u64)>) -> Self {
+   |            ^^^
+...
+89 |     pub fn set_indices(&mut self) {
    |            ^^^^^^^^^^^
 
 warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.84s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.20s

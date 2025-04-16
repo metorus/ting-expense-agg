@@ -27,11 +27,10 @@ fn main() {
 #[cfg(all(feature = "graphics", feature = "server"))]
 fn main() {
     let runtime = tokio::runtime::Runtime::new().unwrap();
-    
     let (root_send, root_recv) = tokio::sync::oneshot::channel();
     runtime.spawn(server::serve_forever("0.0.0.0:4341", vec![1_u8; 64], Some(root_send)));
     let db = runtime.block_on(async {
-        let root_credentials = root_recv.await.expect("TEA root account could not be generated");
+        let root_credentials = root_recv.await.expect("TEA root account was not generated");
         remotehost::RemoteDatabase::connect("http://127.0.0.1:4341", root_credentials).await
     });
     

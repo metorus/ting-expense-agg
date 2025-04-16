@@ -1,27 +1,31 @@
    Compiling ting-expense-a v0.3.0 (/home/tigr/SeriousSoft/Rusty/ting-expense-a)
-warning: unused import: `axum::response::Redirect`
- --> src/server.rs:9:5
-  |
-9 | use axum::response::Redirect;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default
-
-warning: method `raw_add` is never used
-  --> src/crosstyping.rs:58:12
+warning: constant `UNCLASSIFIED` is never used
+  --> src/crosstyping.rs:10:11
    |
-57 | impl CachedStats {
-   | ---------------- method in this implementation
-58 |     pub fn raw_add(&mut self, category: &str, amount: i64, d: isize) {
-   |            ^^^^^^^
+10 | pub const UNCLASSIFIED: &str = "unclassified";
+   |           ^^^^^^^^^^^^
    |
    = note: `#[warn(dead_code)]` on by default
 
+warning: methods `raw_add`, `add`, and `sub` are never used
+  --> src/crosstyping.rs:59:12
+   |
+58 | impl CachedStats {
+   | ---------------- methods in this implementation
+59 |     pub fn raw_add(&mut self, category: &str, amount: i64, d: isize) {
+   |            ^^^^^^^
+...
+75 |     pub fn add(&mut self, e: &Expense) {
+   |            ^^^
+...
+78 |     pub fn sub(&mut self, e: &Expense) {
+   |            ^^^
+
 warning: trait `Upstream` is never used
-   --> src/crosstyping.rs:104:11
+   --> src/crosstyping.rs:112:11
     |
-104 | pub trait Upstream {
+112 | pub trait Upstream {
     |           ^^^^^^^^
 
-warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (run `cargo fix --bin "ting-expense-a"` to apply 1 suggestion)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.79s
+warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.26s

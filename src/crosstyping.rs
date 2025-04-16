@@ -7,27 +7,28 @@ use uuid::Uuid;
 use std::collections::BTreeMap;
 
 
+pub const UNCLASSIFIED: &str = "unclassified";
 pub const MONTH_LIKE: Duration = Duration::days(30);
 
 //----------------------------------------------------------------------------//
 /// Server-generated information about a certain expense.
 /// If we intend to allow sharing information, these fields must not be
 /// client-controllable at risk of falsification.
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Metadata {
     pub uid: Uuid,
     pub time: OffsetDateTime,
     pub principal: Option<String>    // None stands for local
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ClientData {
     pub amount: u64,
     pub group: Option<String>,
     pub revoked: bool,
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Expense {
     pub server: Metadata,
     pub client: ClientData
@@ -47,7 +48,7 @@ impl std::fmt::Display for Expense {
     }
 }
 
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CachedStats {
     pub records_alive: usize,
     pub group_spendings: Vec<(String, u64)>,
@@ -71,6 +72,13 @@ impl CachedStats {
         self.total_spending =
             self.total_spending.saturating_add_signed(amount);
     }
+    pub fn add(&mut self, e: &Expense) {
+        self.raw_add(e.client.group.as_deref().unwrap_or(UNCLASSIFIED), e.client.amount as i64, 1);
+    }
+    pub fn sub(&mut self, e: &Expense) {
+        let inv_amount = -(e.client.amount as i64);
+        self.raw_add(e.client.group.as_deref().unwrap_or(UNCLASSIFIED), inv_amount, -1);
+    }
     pub fn new(records: (u64, usize), group_spendings: Vec<(String, u64)>) -> Self {
         let (total_spending, records_alive) = records;
         let group_indices = BTreeMap::new();
@@ -88,13 +96,13 @@ impl CachedStats {
 
 //----------------------------------------------------------------------------//
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum ClientboundUpdate {
     Revoked {expense: Expense},
     NewSpending {expense: Expense, temp_alias: Uuid},
     InitStats {lifetime_stats: CachedStats, recent_expenses: Vec<Expense>}
 }
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum ServerboundUpdate {
     Revoked {expense_id: Uuid},
     MadeExpense {info: ClientData, temp_alias: Uuid},
