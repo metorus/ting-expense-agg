@@ -1,7 +1,3 @@
-   Compiling rand v0.9.0
-   Compiling tungstenite v0.26.2
-   Compiling totp-rs v5.7.0
-   Compiling tokio-tungstenite v0.26.2
    Compiling ting-expense-a v0.3.0 (/home/tigr/SeriousSoft/Rusty/ting-expense-a)
 warning: unused import: `axum::response::Redirect`
  --> src/server.rs:9:5
@@ -28,4 +24,4 @@ warning: trait `Upstream` is never used
     |           ^^^^^^^^
 
 warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (run `cargo fix --bin "ting-expense-a"` to apply 1 suggestion)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.86s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.79s

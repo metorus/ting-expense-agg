@@ -1,4 +1,5 @@
-// #[sides(client,server)]
+#[cfg(all(feature = "selfhost", feature = "server"))]
+compile_error!("Select one of `selfhost`, `server` features.");
 
 #[cfg(all(feature = "graphics", not(feature = "selfhost")))] mod remotehost;
 #[cfg(feature = "selfhost")] mod selfhost;
@@ -8,9 +9,6 @@
 #[cfg(feature = "server")] mod server;
 mod crosstyping;
 
-
-#[cfg(all(feature = "selfhost", feature = "server"))]
-compile_error!("Select one of `selfhost`, `server` features.");
 
 
 #[cfg(all(feature = "graphics", feature = "selfhost"))]
@@ -27,13 +25,16 @@ fn main() {
 }
 
 #[cfg(all(feature = "graphics", feature = "server"))]
-#[tokio::main]
-async fn main() {
-    let (root_send, root_recv) = tokio::sync::oneshot::channel();
-    tokio::task::spawn(server::serve_forever("0.0.0.0:4341", vec![1_u8; 64], Some(root_send)));
-    let root_credentials = root_recv.await.expect("TEA root account could not be generated");
+fn main() {
+    let runtime = tokio::runtime::Runtime::new().unwrap();
     
-    let db = remotehost::RemoteDatabase::connect("http://127.0.0.1:4341", root_credentials).await;
+    let (root_send, root_recv) = tokio::sync::oneshot::channel();
+    runtime.spawn(server::serve_forever("0.0.0.0:4341", vec![1_u8; 64], Some(root_send)));
+    let db = runtime.block_on(async {
+        let root_credentials = root_recv.await.expect("TEA root account could not be generated");
+        remotehost::RemoteDatabase::connect("http://127.0.0.1:4341", root_credentials).await
+    });
+    
     graphics::run_app(db).unwrap();
 }
 
