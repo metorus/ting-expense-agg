@@ -58,6 +58,7 @@ COMMIT;
                 "device name or principal already in use");
         let totp = tx.query_row("INSERT INTO users(device, principal) VALUES(?1, ?2)
                                  RETURNING totp_key", we, |row| row.get(0).into())?;
+        tx.commit()?;
         Ok(totp)
     }
     
@@ -66,6 +67,7 @@ COMMIT;
         let tx = conn.transaction_with_behavior(TransactionBehavior::Exclusive)?;
         let totp = tx.query_row("INSERT INTO users(device, principal) VALUES(?1, ?2)
             RETURNING totp_key", (src_principal, dst_device), |row| row.get(0).into())?;
+        tx.commit()?;
         Ok(totp)
     }
     
@@ -89,7 +91,7 @@ COMMIT;
     
     pub async fn login_impl(&self, device: &str, code: &str) -> Result<String> {
         let (principal, secret) = self.load_login_principal_key(device).await?;
-        let totp = TOTP::new(Algorithm::SHA1, 9, 1, 20, secret)?;
+        let totp = TOTP::new(Algorithm::SHA1, 8, 1, 20, secret)?;
         ensure!(totp.check_current(code)?, "wrong TOTP code");
         Ok(principal)
     }

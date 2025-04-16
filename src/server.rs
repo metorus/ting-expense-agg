@@ -38,7 +38,7 @@ pub async fn login(
     totp: String
 ) -> impl IntoResponse {
     let principal = db.login_impl(&device, &totp).await.map_err(|e| e.to_string())?;
-    Ok::<_, String>((jar.add(logon_cookie(principal)), Redirect::to("/api/me")))
+    Ok::<_, String>(jar.add(logon_cookie(principal)))
 }
 pub async fn register(
     State(db): State<Arc<MultiuserDb>>,
@@ -52,10 +52,12 @@ pub async fn register(
             (db.register_from(&principal, &device).await.map_err(|e| e.to_string())?, principal)
         },
         (None, Some(principal)) => {
+            if principal.len() <= 1 {return Err("invalid principal name".to_owned());}
             (db.register_impl(&device, &principal).await.map_err(|e| e.to_string())?, principal)
         },
         _ => return Err("cannot register in name of other principal when logged in".to_owned()),
     };
+    println!("{device} -> {principal}");
     Ok((jar.add(logon_cookie(principal)), totp))
 }
 pub async fn handle_me(
@@ -167,8 +169,8 @@ pub async fn serve_forever(bind_ip: &'static str, session_signing_key: Vec<u8>,
     }
     
     let app = Router::new()
-        .route("/api/register", post(register))
-        .route("/api/login", post(login))
+        .route("/api/register/:device", post(register))
+        .route("/api/login/:device", post(login))
         .route("/api/me", get(handle_me))
         .route("/ws", get(handle_websocket))
         .with_state(db)

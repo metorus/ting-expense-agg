@@ -1,5 +1,6 @@
 // #[sides(client,server)]
 
+#[cfg(all(feature = "graphics", not(feature = "selfhost")))] mod remotehost;
 #[cfg(feature = "selfhost")] mod selfhost;
 #[cfg(feature = "graphics")] mod db_slice;
 #[cfg(feature = "graphics")] mod graphics;
@@ -30,11 +31,10 @@ fn main() {
 async fn main() {
     let (root_send, root_recv) = tokio::sync::oneshot::channel();
     tokio::task::spawn(server::serve_forever("0.0.0.0:4341", vec![1_u8; 64], Some(root_send)));
-    let _root_credentials = root_recv.await.expect("TEA root account could not be generated");
+    let root_credentials = root_recv.await.expect("TEA root account could not be generated");
     
-    unimplemented!()
-    // let db: dbs::SingleUserSqlite = todo!();
-    // graphics::run_app(db).unwrap();
+    let db = remotehost::RemoteDatabase::connect("http://127.0.0.1:4341", root_credentials).await;
+    graphics::run_app(db).unwrap();
 }
 
 #[cfg(all(not(feature = "graphics"), feature = "server"))]

@@ -5,8 +5,7 @@ use rusqlite::Connection;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::crosstyping::{ClientboundUpdate, Upstream, Expense, ClientData,
-                         ServerboundUpdate, Metadata, CachedStats};
+use crate::crosstyping::*;
 
 
 pub struct SingleUserSqlite {
@@ -56,9 +55,8 @@ CREATE TABLE spending_records (
     spend_group        TEXT,
     revoked            BOOL     DEFAULT FALSE
 );
-CREATE INDEX live_records ON spending_records(
-    principal ASC, revoked ASC, unix_date DESC);
-CREATE INDEX all_records ON spending_records(principal, unix_date DESC);
+CREATE INDEX live_records ON spending_records(principal, revoked, unix_date);
+CREATE INDEX aggregate_records ON spending_records(principal, revoked, spend_group, unix_date);
 COMMIT;
         ").unwrap();
         

@@ -1,12 +1,35 @@
-   Compiling ting-expense-a v0.2.=== Building graphics,selfhost ===
-g-expense-a)
-warning: associated items `with`, `life_transactions_info`, and `life_pie` are never used
-   --> src/db_slice.rs:50:12
+   Compiling thiserror v2.0.12
+  === Building graphics,selfhost ===
+ thiserror-impl v2.0.12
+   Compiling totp-rs v5.7.0
+   Compiling tungstenite v0.26.2
+   Compiling tokio-tungstenite v0.26.2
+   Compiling ting-expense-a v0.3.0 (/home/tigr/SeriousSoft/Rusty/ting-expense-a)
+warning: unused imports: `Cookie` and `header::HeaderValue`
+ --> src/remotehost.rs:3:29
+  |
+3 | use reqwest::{cookie::{Jar, Cookie, CookieStore}, Client, header::HeaderValue, Response};
+  |                             ^^^^^^                        ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `WebSocketStream`
+ --> src/remotehost.rs:4:40
+  |
+4 | use tokio_tungstenite::{connect_async, WebSocketStream};
+  |                                        ^^^^^^^^^^^^^^^
+
+warning: unused import: `axum::response::Redirect`
+ --> src/server.rs:9:5
+  |
+9 | use axum::response::Redirect;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `life_transactions_info` and `life_pie` are never used
+   --> src/db_slice.rs:133:12
     |
 49  | impl<U: Upstream> DbView<U> {
-    | --------------------------- associated items in this implementation
-50  |     pub fn with(mut upstream: U) -> Self {
-    |            ^^^^
+    | --------------------------- methods in this implementation
 ...
 133 |     pub fn life_transactions_info(&mut self) -> (u64, usize) {
     |            ^^^^^^^^^^^^^^^^^^^^^^
@@ -16,39 +39,13 @@ warning: associated items `with`, `life_transactions_info`, and `life_pie` are n
     |
     = note: `#[warn(dead_code)]` on by default
 
-warning: variant `Main` is never constructed
-  --> src/graphics.rs:61:5
-   |
-60 | enum CurScreen {
-   |      --------- variant in this enum
-61 |     Main(MainForm),
-   |     ^^^^
-
-warning: associated function `new` is never used
-  --> src/graphics.rs:76:12
-   |
-75 | impl<U: Upstream> Trac<U> {
-   | ------------------------- associated function in this implementation
-76 |     pub fn new(cc: &CreationContext<'_>, db: U) -> Self {
-   |            ^^^
-
-warning: function `run_app` is never used
-   --> src/graphics.rs:274:8
-    |
-274 | pub fn run_app(db: impl Upstream) -> eframe::Result {
-    |        ^^^^^^^
-
-warning: method `take_init` is never used
-   --> src/crosstyping.rs:110:8
-    |
-104 | pub trait Upstream {
-    |           -------- method in this trait
-...
-110 |     fn take_init(&mut self) -> Option<(CachedStats, CachedStats, Vec<Expense>)>;
-    |        ^^^^^^^^^
-
-warning: `ting-expense-a` (bin "ting-expense-a") generated 5 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.73s
+warning: `ting-expense-a` (bin "ting-expense-a") generated 4 warnings (run `cargo fix --bin "ting-expense-a"` to apply 3 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.10s
+   Compiling rand v0.9.0
+   Compiling tungstenite v0.26.2
+   Compiling totp-rs v5.7.0
+   Compiling tokio-tungstenite v0.26.2
+   Compiling ting-expense-a v0.3.0 (/home/tigr/SeriousSoft/Rusty/ting-expense-a)
 warning: methods `life_transactions_info` and `life_pie` are never used
    --> src/db_slice.rs:133:12
     |
@@ -76,4 +73,4 @@ warning: associated items `new` and `set_indices` are never used
    |            ^^^^^^^^^^^
 
 warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.14s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.10s

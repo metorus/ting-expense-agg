@@ -1,4 +1,16 @@
-   Compiling ting-expense-a v0.2.0 (/home/tigr/SeriousSoft/Rusty/ting-expense-a)
+   Compiling rand v0.9.0
+   Compiling tungstenite v0.26.2
+   Compiling totp-rs v5.7.0
+   Compiling tokio-tungstenite v0.26.2
+   Compiling ting-expense-a v0.3.0 (/home/tigr/SeriousSoft/Rusty/ting-expense-a)
+warning: unused import: `axum::response::Redirect`
+ --> src/server.rs:9:5
+  |
+9 | use axum::response::Redirect;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
 warning: method `raw_add` is never used
   --> src/crosstyping.rs:58:12
    |
@@ -15,5 +27,5 @@ warning: trait `Upstream` is never used
 104 | pub trait Upstream {
     |           ^^^^^^^^
 
-warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.61s
+warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings (run `cargo fix --bin "ting-expense-a"` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.86s
