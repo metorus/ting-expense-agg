@@ -5,7 +5,7 @@ use egui::{*, FontFamily::Proportional, FontId};
 use eframe::{App, CreationContext};
 
 use std::collections::BTreeMap;
-
+use std::sync::Arc;
 use crate::crosstyping::{ClientData, Upstream};
 use crate::db_slice::DbView;
 use crate::widgets::*;
@@ -15,14 +15,14 @@ const CATEGORIES: [(&'static str, Color32, Option<&'static str>); 5] = [
     ("🍞", Color32::GREEN,     Some("еду")),
     ("🏡", Color32::DARK_GRAY, Some("хозтовары")),
     ("🚋", Color32::ORANGE,    Some("транспорт")),
-    ("etc", Color32::GOLD,     None),
+    ("всё", Color32::GOLD,     None),
     ("📝", Color32::BLACK,     None),
 ];
 fn color_cat(a: &str) -> Color32 {
     match a {
-        "food"      => Color32::GREEN,
-        "supplies"  => Color32::DARK_GRAY,
-        "transport" => Color32::ORANGE,
+        "еду"       => Color32::GREEN,
+        "хозтовары" => Color32::DARK_GRAY,
+        "транспорт" => Color32::ORANGE,
         _           => Color32::GOLD,
     }
 }
@@ -75,7 +75,22 @@ pub struct Trac<U: Upstream> {
 impl<U: Upstream> Trac<U> {
     pub fn new(cc: &CreationContext<'_>, db: U) -> Self {
         cc.egui_ctx.set_theme(Theme::Light);
-        
+
+
+        let mut fonts = FontDefinitions::default();
+
+
+        let noto_bald = "NotoSansBold".to_string();
+        let noto_light = "NotoSansLight".to_string();
+
+        fonts.font_data.insert(noto_light.clone(), Arc::from(FontData::from_static(include_bytes!("../assets/NotoSans-Light.ttf"))));
+        fonts.font_data.insert(noto_bald.clone(), Arc::from(FontData::from_static(include_bytes!("../assets/NotoSans-Regular.ttf"))));
+        fonts.families.get_mut(&FontFamily::Proportional).unwrap().push(noto_light.clone());
+        fonts.families.get_mut(&FontFamily::Monospace).unwrap().push(noto_bald.clone());
+
+        cc.egui_ctx.set_fonts(fonts);
+
+
         use egui::TextStyle::*;
         let text_styles: BTreeMap<_, _> = [
             (Heading, FontId::new(30.0, Proportional)),
@@ -159,9 +174,8 @@ impl<U: Upstream> Trac<U> {
                     }
                 });
             });
-        
         let (latte, latc) = self.db.month_transactions_info();
-        
+
         CentralPanel::default()
             .frame(Frame::side_top_panel(&ctx.style())
                          .inner_margin(Margin::symmetric(2.0, 30.0)))
@@ -289,10 +303,16 @@ pub fn run_app(db: impl Upstream) -> eframe::Result {
     eframe::run_native(
         "ton.ting.ExpenseExplorer",
         native_options,
-        Box::new(|cc| Ok(Box::new(
-            Trac::new(cc, db)
-        ))),
-    )
+        Box::new(|cc|
+                     {
+                        Ok(Box::new(Trac::new(cc, db)))
+                     }
+        ,
+    ))
+
+
+
+
 }
 
 #[cfg(target_arch = "wasm32")]
