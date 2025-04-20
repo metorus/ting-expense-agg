@@ -1,12 +1,4 @@
    Compiling ting-expense-a v0.3.0 (/home/tigr/SeriousSoft/Rusty/ting-expense-a)
-warning: constant `UNCLASSIFIED` is never used
-  --> src/crosstyping.rs:10:11
-   |
-10 | pub const UNCLASSIFIED: &str = "unclassified";
-   |           ^^^^^^^^^^^^
-   |
-   = note: `#[warn(dead_code)]` on by default
-
 warning: methods `raw_add`, `add`, and `sub` are never used
   --> src/crosstyping.rs:59:12
    |
@@ -20,6 +12,8 @@ warning: methods `raw_add`, `add`, and `sub` are never used
 ...
 78 |     pub fn sub(&mut self, e: &Expense) {
    |            ^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
 
 warning: trait `Upstream` is never used
    --> src/crosstyping.rs:112:11
@@ -27,5 +21,5 @@ warning: trait `Upstream` is never used
 112 | pub trait Upstream {
     |           ^^^^^^^^
 
-warning: `ting-expense-a` (bin "ting-expense-a") generated 3 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.26s
+warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.47s

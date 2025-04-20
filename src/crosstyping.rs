@@ -7,7 +7,7 @@ use uuid::Uuid;
 use std::collections::BTreeMap;
 
 
-pub const UNCLASSIFIED: &str = "unclassified";
+pub const UNCLASSIFIED: &str = "покупки";
 pub const MONTH_LIKE: Duration = Duration::days(30);
 
 //----------------------------------------------------------------------------//
@@ -39,11 +39,11 @@ impl std::fmt::Display for Expense {
         if self.client.revoked {
             return Err(std::fmt::Error);
         }
-        write!(f, "{:08X} - {} - {}P on {}",
+        write!(f, "{:08X} - {} - {}\u{20bd} на {}",
             self.server.uid.as_fields().0,
             self.server.time.format(&Rfc3339).unwrap(),
             self.client.amount,
-            self.client.group.as_deref().unwrap_or("something")
+            self.client.group.as_deref().unwrap_or(UNCLASSIFIED)
         )
     }
 }

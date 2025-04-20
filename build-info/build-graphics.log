@@ -24,7 +24,7 @@ warning: method `sub` is never used
    |            ^^^
 
 warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.63s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.22s
    Compiling ting-expense-a v0.3.0 (/home/tigr/SeriousSoft/Rusty/ting-expense-a)
 warning: methods `life_transactions_info` and `life_pie` are never used
    --> src/db_slice.rs:124:12
@@ -56,4 +56,4 @@ warning: associated items `sub`, `new`, and `set_indices` are never used
    |            ^^^^^^^^^^^
 
 warning: `ting-expense-a` (bin "ting-expense-a") generated 2 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.20s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.88s

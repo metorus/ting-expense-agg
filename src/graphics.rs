@@ -12,9 +12,9 @@ use crate::widgets::*;
 
 
 const CATEGORIES: [(&'static str, Color32, Option<&'static str>); 5] = [
-    ("🍞", Color32::GREEN,     Some("food")),
-    ("🏡", Color32::DARK_GRAY, Some("supplies")),
-    ("🚋", Color32::ORANGE,    Some("transport")),
+    ("🍞", Color32::GREEN,     Some("еду")),
+    ("🏡", Color32::DARK_GRAY, Some("хозтовары")),
+    ("🚋", Color32::ORANGE,    Some("транспорт")),
     ("etc", Color32::GOLD,     None),
     ("📝", Color32::BLACK,     None),
 ];
@@ -101,7 +101,7 @@ impl<U: Upstream> Trac<U> {
             .min_height(48.0)
             .show(ctx, |ui| {
                 ui.horizontal_centered(|ui| {
-                    ui.label("Expense Explorer | Debug Version");
+                    ui.label("Обозреватель расходов TEA | Отладочная версия");
                 });
             });
         
@@ -119,13 +119,13 @@ impl<U: Upstream> Trac<U> {
                     ui.add(widgets::DragValue::new(&mut form.spent)
                         .range(0..=100000)
                         .speed(drag_speed)
-                        .prefix("Spent: "));
+                        .prefix("Итого: "));
                     
                     expense_category_slider(&mut ui, &mut form.anim_category,
                         &mut form.chosen_category, &CATEGORIES);
                     
                     let write_in_cat = form.anim_category == 4.0;
-                    CollapsingHeader::new("Specific category")
+                    CollapsingHeader::new("Другая категория")
                         .open(Some(write_in_cat))
                         .show(ui, |ui| {
                             ui.text_edit_singleline(&mut form.spec_category);
@@ -133,14 +133,14 @@ impl<U: Upstream> Trac<U> {
                     
                     ui.add(widgets::TextEdit::multiline(&mut form.comment)
                         .desired_rows(2)
-                        .hint_text("Comment"));
+                        .hint_text("Комментарий"));
                     
                     if form.spent == 0 {ui.disable();}
                     if write_in_cat && form.spec_category.is_empty() {
                         ui.disable();
                     }
                     
-                    let spent = RichText::new("Spent").size(19.0)
+                    let spent = RichText::new("Записать").size(19.0)
                                          .strong().color(Color32::DARK_BLUE);
                     let spent = Button::new(spent).fill(Color32::LIGHT_BLUE);
                     if ui.add(spent).clicked() {
@@ -168,12 +168,12 @@ impl<U: Upstream> Trac<U> {
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.spacing_mut().item_spacing.y += 12.0;
-                    ui.heading(format!("Spending amount this month: {latte}"));
+                    ui.heading(format!("За месяц потрачено {latte}\u{20bd}"));
                     if latc == 0 { return; }
                     
-                    ui.label(format!("in {latc} purchases ({:.2} on average);",
+                    ui.label(format!("в {latc} чеках (средний чек {:.2}\u{20bd});",
                                      (latte as f32) / (latc as f32)));
-                    if ui.button("Detailed statistics").clicked() {
+                    if ui.button("Подробная информация").clicked() {
                         cmds.push(UiCommands::Go(CurScreen::Stats));
                     }
                     ui.add_space(12.0);
@@ -192,7 +192,7 @@ impl<U: Upstream> Trac<U> {
             .min_height(48.0)
             .show(ctx, |ui| {
                 ui.horizontal_centered(|ui| {
-                    ui.label("Expense Explorer | Debug Version");
+                    ui.label("Обозреватель расходов TEA | Отладочная версия");
                 });
             });
         
@@ -204,7 +204,7 @@ impl<U: Upstream> Trac<U> {
                 ui.vertical_centered(|ui| {
                     ui.spacing_mut().item_spacing.y += 12.0;
                     
-                    if ui.button("Back").clicked() {
+                    if ui.button("Назад").clicked() {
                         cmds.push(UiCommands::Back);
                     }
                     
@@ -276,7 +276,7 @@ pub fn run_app(db: impl Upstream) -> eframe::Result {
     
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_title("Expense Explorer")
+            .with_title("Обозреватель расходов")
             .with_inner_size([700.0, 600.0])
             .with_min_inner_size([600.0, 540.0])
             .with_icon(
