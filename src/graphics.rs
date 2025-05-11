@@ -75,22 +75,17 @@ pub struct Trac<U: Upstream> {
 impl<U: Upstream> Trac<U> {
     pub fn new(cc: &CreationContext<'_>, db: U) -> Self {
         cc.egui_ctx.set_theme(Theme::Light);
-
-
+        
         let mut fonts = FontDefinitions::default();
-
-
         let noto_bald = "NotoSansBold".to_string();
         let noto_light = "NotoSansLight".to_string();
-
         fonts.font_data.insert(noto_light.clone(), Arc::from(FontData::from_static(include_bytes!("../assets/NotoSans-Light.ttf"))));
         fonts.font_data.insert(noto_bald.clone(), Arc::from(FontData::from_static(include_bytes!("../assets/NotoSans-Regular.ttf"))));
         fonts.families.get_mut(&FontFamily::Proportional).unwrap().push(noto_light.clone());
         fonts.families.get_mut(&FontFamily::Monospace).unwrap().push(noto_bald.clone());
-
+        
         cc.egui_ctx.set_fonts(fonts);
-
-
+        
         use egui::TextStyle::*;
         let text_styles: BTreeMap<_, _> = [
             (Heading, FontId::new(30.0, Proportional)),
@@ -122,7 +117,7 @@ impl<U: Upstream> Trac<U> {
         
         TopBottomPanel::bottom("track")
             .frame(Frame::side_top_panel(&ctx.style())
-                         .inner_margin(Margin::same(18.0)))
+                         .inner_margin(Margin::same(18)))
             .show(ctx, |ui| {
                 let bigness = (form.spent as f32).ln_1p();  // 0.00 .. 11.52
                 let drag_speed = 12.0 - bigness;
@@ -178,7 +173,7 @@ impl<U: Upstream> Trac<U> {
 
         CentralPanel::default()
             .frame(Frame::side_top_panel(&ctx.style())
-                         .inner_margin(Margin::symmetric(2.0, 30.0)))
+                         .inner_margin(Margin::symmetric(2, 30)))
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.spacing_mut().item_spacing.y += 12.0;
@@ -213,7 +208,7 @@ impl<U: Upstream> Trac<U> {
         
         CentralPanel::default()
             .frame(Frame::side_top_panel(&ctx.style())
-                         .inner_margin(Margin::same(18.0)))
+                         .inner_margin(Margin::same(18)))
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.spacing_mut().item_spacing.y += 12.0;

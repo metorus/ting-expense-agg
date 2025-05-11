@@ -124,7 +124,7 @@ fn draw_legend<'a, D>(painter: &Painter, rect: Rect, data: D, ui: &Ui)
     for (label, _, color) in data {
         // Color box showing how we displayed that category,
         let color_rect = Rect::from_min_size(current_pos, color_box_size);
-        painter.rect_filled(color_rect, Rounding::same(0.0), color);
+        painter.rect_filled(color_rect, CornerRadius::same(0), color);
 
         // and the category label.
         let text_pos = Pos2::new(
