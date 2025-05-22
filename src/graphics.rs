@@ -311,7 +311,7 @@ pub fn run_app(db: impl Upstream) -> eframe::Result {
 }
 
 #[cfg(target_arch = "wasm32")]
-pub fn run_app(db: impl Upstream) {
+pub fn run_app(db: impl Upstream + 'static) {
     use eframe::wasm_bindgen::JsCast as _;
     // eframe::WebLogger::init(log::LevelFilter::Debug).ok();
     let web_options = eframe::WebOptions::default();
