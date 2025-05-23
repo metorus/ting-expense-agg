@@ -45,7 +45,7 @@ impl RemoteDatabase {
                     let Ok(inbound): Result<ClientboundUpdate, _> = from_bytes(&m) else {return};
                     
                     match inbound {
-                        ClientboundUpdate::InitStats{mut lifetime_stats, recent_expenses} => {
+                        ClientboundUpdate::InitStats{lifetime_stats, recent_expenses} => {
                             let Some(init_data_tx) = init_data_tx.take() else {continue};
                             
                             // we will calculate stats on this thread, not on GUI one

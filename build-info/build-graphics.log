@@ -1,1 +1,34 @@
-.git/hooks/pre-commit: 27: ./build-gr.sh: Permission denied
+    Checking ting-expense-a v0.4.=== Checking graphics,selfhost ===
+g-expense-a)
+warning: methods `life_transactions_info` and `life_pie` are never used
+   --> src/db_slice.rs:140:12
+    |
+45  | impl<U: Upstream> DbView<U> {
+    | --------------------------- methods in this implementation
+...
+140 |     pub fn life_transactions_info(&mut self) -> (u64, usize) {
+    |            ^^^^^^^^^^^^^^^^^^^^^^
+...
+154 |     pub fn life_pie(&mut self) -> &[(String, u64)] {
+    |            ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.40s
+warning: methods `life_transactions_info` and `life_pie` are never used
+   --> src/db_slice.rs:140:12
+    |
+45  | impl<U: Upstream> DbView<U> {
+    | --------------------------- methods in this implementation
+...
+140 |     pub fn life_transactions_info(&mut self) -> (u64, usize) {
+    |            ^^^^^^^^^^^^^^^^^^^^^^
+...
+154 |     pub fn life_pie(&mut self) -> &[(String, u64)] {
+    |            ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.14s

@@ -1,0 +1,19 @@
+warning: methods `life_transactions_info`=== Server ===
+ are never used
+   --> src/db_slice.rs:140:12
+    |
+45  | impl<U: Upstream> DbView<U> {
+    | --------------------------- methods in this implementation
+...
+140 |     pub fn life_transactions_info(&mut self) -> (u64, usize) {
+    |            ^^^^^^^^^^^^^^^^^^^^^^
+...
+154 |     pub fn life_pie(&mut self) -> &[(String, u64)] {
+    |            ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `ting-expense-a` (bin "ting-expense-a") generated 1 warning
+    Finished `release` profile [optimized] target(s) in 0.12s
+   Compiling ting-expense-a v0.4.0 (/home/tigr/SeriousSoft/Rusty/ting-expense-a)
+    Finished `release` profile [optimized] target(s) in 2.22s

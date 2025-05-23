@@ -62,11 +62,30 @@ impl<U: Upstream> DbView<U> {
     }
 
     fn keep_month(&mut self) -> OffsetDateTime {
-        // todo!("check while oldest expense is over a month old");
-        
         let now = OffsetDateTime::now_local().unwrap()
                                  .replace_nanosecond(0).unwrap();
-        now - MONTH_LIKE
+        let liveline = now - MONTH_LIKE;
+        
+        while self.month_stats.records_alive > 0 {
+            let expense_bottom_index = self.live_records.len() - self.month_stats.records_alive;
+            let (_, expense) = self.live_records
+                .get_index(expense_bottom_index)
+                .expect("we must know all expenses of past month, if only to unbuffer them");
+            
+            match expense {
+                RecordViewValue::Confirmed(expense) if expense.server.time < liveline => {
+                    self.month_stats.sub(&expense)
+                },
+                RecordViewValue::Provisional(client_data, time) if time < &liveline => {
+                    let group = client_data.group.as_deref().unwrap_or(UNCLASSIFIED);
+                    let amount = client_data.amount as i64;
+                    self.month_stats.raw_add(group, -amount, -1);
+                },
+                _ => break,
+            }
+        }
+        
+        liveline
     }
 
     fn sync_upstream(&mut self) {
@@ -87,16 +106,13 @@ impl<U: Upstream> DbView<U> {
     }
 
     fn handle_revocation(&mut self, expense: Expense, liveline: OffsetDateTime) {
-        if self.live_records.remove(
+        let had_known_record = self.live_records.remove(
             &RecordViewKey::Confirmed(expense.server.time, expense.server.uid)
-        ).is_none() {return;}
-        
-        let c = &expense.client;
-        self.life_stats.raw_add(c.group.as_deref().unwrap_or(UNCLASSIFIED),
-            -(c.amount as i64), -1);
+        );
+        self.life_stats.sub(&expense);
         if expense.server.time >= liveline {
-            self.month_stats.raw_add(c.group.as_deref()
-                .unwrap_or(UNCLASSIFIED), -(c.amount as i64), -1);
+            debug_assert!(had_known_record.is_some(), "server must have sent this record to us");
+            self.month_stats.sub(&expense);
         }
     }
 
