@@ -473,7 +473,7 @@ dependencies = [
  "zbus",
  "zbus-lockstep",
  "zbus-lockstep-macros",
- "zbus_names 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "zbus_names",
  "zvariant",
 ]
 
@@ -3969,7 +3969,7 @@ dependencies = [
 
 [[package]]
 name = "ting-expense-a"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -5331,6 +5331,8 @@ dependencies = [
 [[package]]
 name = "zbus"
 version = "4.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb97012beadd29e654708a0fdb4c84bc046f537aecfde2c3ee0a9e4b4d48c725"
 dependencies = [
  "async-broadcast",
  "async-executor",
@@ -5350,7 +5352,7 @@ dependencies = [
  "hex",
  "nix",
  "ordered-stream",
- "rand 0.9.1",
+ "rand 0.8.5",
  "serde",
  "serde_repr",
  "sha1",
@@ -5360,7 +5362,7 @@ dependencies = [
  "windows-sys 0.52.0",
  "xdg-home",
  "zbus_macros",
- "zbus_names 3.0.0",
+ "zbus_names",
  "zvariant",
 ]
 
@@ -5391,21 +5393,14 @@ dependencies = [
 [[package]]
 name = "zbus_macros"
 version = "4.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "267db9407081e90bbfa46d841d3cbc60f59c0351838c4bc65199ecd79ab1983e"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn",
- "zvariant_utils 2.1.0",
-]
-
-[[package]]
-name = "zbus_names"
-version = "3.0.0"
-dependencies = [
- "serde",
- "static_assertions",
- "zvariant",
+ "zvariant_utils",
 ]
 
 [[package]]
@@ -5428,7 +5423,7 @@ dependencies = [
  "quick-xml 0.30.0",
  "serde",
  "static_assertions",
- "zbus_names 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "zbus_names",
  "zvariant",
 ]
 
@@ -5549,16 +5544,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
- "zvariant_utils 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "zvariant_utils"
-version = "2.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
+ "zvariant_utils",
 ]
 
 [[package]]

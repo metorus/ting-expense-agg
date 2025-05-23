@@ -186,7 +186,7 @@ UPDATE spending_records SET revoked = TRUE WHERE principal = ?1 AND id = ?2
                 Ok((group, total))
             }
         )?.filter_map(|r| r.ok()).collect::<Vec<_>>();
-        let lifetime_stats = CachedStats::new(lifetime_gen, lifetime_grouped);
+        let lifetime_stats = (lifetime_gen, lifetime_grouped);
         
         if MONTH_LIKE != time::Duration::days(30) {
             eprintln!("code was refactored and now accumulates data for non-30-day interval");

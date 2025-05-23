@@ -1,6 +1,6 @@
 use axum::extract::{State, Extension, Path, Request, ws::{CloseFrame, Message, close_code}};
 use axum_extra::extract::{cookie::{Key, Cookie, SameSite}, SignedCookieJar};
-use axum::{extract::WebSocketUpgrade, response::{IntoResponse, Html}};
+use axum::{extract::WebSocketUpgrade, response::IntoResponse};
 use axum::{routing::{get, post}, Router, RequestExt};
 use axum::middleware::map_request_with_state;
 use tokio::sync::broadcast::error::RecvError;

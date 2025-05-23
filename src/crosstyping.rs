@@ -4,8 +4,6 @@ use time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use std::collections::BTreeMap;
-
 
 pub const UNCLASSIFIED: &str = "покупки";
 pub const MONTH_LIKE: Duration = Duration::days(30);
@@ -48,13 +46,15 @@ impl std::fmt::Display for Expense {
     }
 }
 
+#[cfg(feature = "graphics")]
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CachedStats {
     pub records_alive: usize,
     pub group_spendings: Vec<(String, u64)>,
-    #[serde(skip)] group_indices: BTreeMap<String, usize>,
+    #[serde(skip)] group_indices: std::collections::BTreeMap<String, usize>,
     pub total_spending: u64,
 }
+#[cfg(feature = "graphics")]
 impl CachedStats {
     pub fn raw_add(&mut self, category: &str, amount: i64, d: isize) {
         let group_idx = match self.group_indices.get(category) {
@@ -72,21 +72,30 @@ impl CachedStats {
         self.total_spending =
             self.total_spending.saturating_add_signed(amount);
     }
+    #[cfg_attr(
+        feature = "graphics",
+        warn(dead_code, reason = "Any +graphics combination must accept incoming expenses")
+    )]
     pub fn add(&mut self, e: &Expense) {
         self.raw_add(e.client.group.as_deref().unwrap_or(UNCLASSIFIED), e.client.amount as i64, 1);
     }
+    #[cfg_attr(
+        feature = "graphics",
+        warn(dead_code, reason = "Any +graphics combination must push month-old expenses out")
+    )]
     pub fn sub(&mut self, e: &Expense) {
         let inv_amount = -(e.client.amount as i64);
         self.raw_add(e.client.group.as_deref().unwrap_or(UNCLASSIFIED), inv_amount, -1);
     }
-    pub fn new(records: (u64, usize), group_spendings: Vec<(String, u64)>) -> Self {
-        let (total_spending, records_alive) = records;
-        let group_indices = BTreeMap::new();
+    #[allow(dead_code, reason = "+selfhost does not need this as it creates default instances")]
+    pub fn new(records: ((u64, usize), Vec<(String, u64)>)) -> Self {
+        let ((total_spending, records_alive), group_spendings) = records;
+        let group_indices = std::collections::BTreeMap::default();
         let mut this = Self {records_alive, group_spendings, group_indices, total_spending};
         this.set_indices();
         this
     }
-    pub fn set_indices(&mut self) {
+    fn set_indices(&mut self) {
         self.group_indices.clear();
         for (i, (g, _)) in self.group_spendings.iter().enumerate() {
             self.group_indices.insert(g.to_owned(), i);
@@ -100,7 +109,7 @@ impl CachedStats {
 pub enum ClientboundUpdate {
     Revoked {expense: Expense},
     NewSpending {expense: Expense, temp_alias: Uuid},
-    InitStats {lifetime_stats: CachedStats, recent_expenses: Vec<Expense>}
+    InitStats {lifetime_stats: ((u64, usize), Vec<(String, u64)>), recent_expenses: Vec<Expense>}
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum ServerboundUpdate {
@@ -108,7 +117,7 @@ pub enum ServerboundUpdate {
     MadeExpense {info: ClientData, temp_alias: Uuid},
 }
 
-
+#[cfg(feature = "graphics")]
 pub trait Upstream {
     fn submit(&mut self, d: ServerboundUpdate);
     fn sync(&mut self) -> Vec<ClientboundUpdate>;

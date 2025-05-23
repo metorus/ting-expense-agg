@@ -1,23 +1,34 @@
 [package]
 name = "ting-expense-a"
 authors = ["Ender Ting <pythonhunter146@gmail.com>"]
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 
 
-# Five build options, with more to come:
-# 1. x86_64-unknown-linux-gnu +headless
-#     Compiles axum-based server for tracking expenses for Linux target.
-# 2. x86_64-pc-windows-gnu +headless
-#     Compiles axum-based server for tracking expenses for Windows target.
-# 3. wasm32-unknown-unknown
-#     Compiles eframe-based WebAssembly application for browsers, with local DB.
-# 4. x86_64-unknown-linux-gnu
+# Nine build options:
+# 1. wasm32-unknown-unknown +graphics_wasm
+#     Compiles eframe-based WebAssembly application for browsers, connecting to the host server.
+# 2. x86_64-unknown-linux-gnu +graphics_nowasm +selfhost
 #     Compiles eframe-based native application for Linux target, with local DB.
-# 5. x86_64-pc-windows-gnu
+# 3. x86_64-unknown-linux-gnu +graphics_nowasm
+#     Compiles an app immediately erroring out, because it doesn't yet know where to connect.
+# 4. x86_64-unknown-linux-gnu +graphics_nowasm +server
+#     Compiles both axum-based server and an application utilizing it, for Linux target.
+# 5. x86_64-unknown-linux-gnu +server
+#     Compiles axum-based server for tracking expenses for Linux target.
+# 6. x86_64-pc-windows-gnu +graphics_nowasm +selfhost
 #     Compiles eframe-based native application for Windows target, with local DB.
-# android: to come
-# ios: to come
+# 7. x86_64-pc-windows-gnu +graphics_nowasm
+#     Compiles an app immediately erroring out, because it doesn't yet know where to connect.
+# 8. x86_64-pc-windows-gnu +graphics_nowasm +server
+#     Compiles both axum-based server and an application utilizing it, for Windows target.
+# 9. x86_64-pc-windows-gnu +server
+#     Compiles axum-based server for tracking expenses for Windows target.
+# android: WebView perhaps?
+# ios: WebView perhaps?
+#
+# +server option also expects a prebuilt WASM bundle and its bindings in assets/ folder.
+
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.100"
@@ -63,8 +74,4 @@ default  = []
 [patch.crates-io]
 egui-winit = { path = "../egui/crates/egui-winit/" }  # fix UTF-8 event translation
 egui = { path = "../egui/crates/egui/" }
-# cookie = { path = "../cookie-rs/" }                   # bump rand dependency 0.8 -> 0.9
-zbus = { path = "../zbus/zbus/" }                     # bump rand dependency 0.8 -> 0.9
-# axum = { path = "../axum/axum/" }                     # bump tungstenite dependency 0.24.0 -> 0.26.2
-                                                      # (all about rand going from 0.8 to 0.9)
 

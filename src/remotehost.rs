@@ -49,7 +49,7 @@ impl RemoteDatabase {
                             let Some(init_data_tx) = init_data_tx.take() else {continue};
                             
                             // we will calculate stats on this thread, not on GUI one
-                            lifetime_stats.set_indices();
+                            let lifetime_stats = CachedStats::new(lifetime_stats);
                             let mut month_stats = CachedStats::default();
                             recent_expenses.iter().for_each(|e| month_stats.add(e));
                             let _ = init_data_tx.send((lifetime_stats, month_stats, recent_expenses));

@@ -36,11 +36,11 @@ impl RemoteDatabase {
                 
                 if let Ok(inbound) = from_bytes::<ClientboundUpdate>(&buf) {
                     match inbound {
-                        ClientboundUpdate::InitStats{mut lifetime_stats, recent_expenses} => {
+                        ClientboundUpdate::InitStats{lifetime_stats, recent_expenses} => {
                             let mut init_tx_opt = init_tx_clone.lock().unwrap();
                             if let Some(init_tx) = init_tx_opt.take() {
                                 // Calculate stats on this thread, not on GUI one
-                                lifetime_stats.set_indices();
+                                let lifetime_stats = CachedStats::new(lifetime_stats);
                                 let mut month_stats = CachedStats::default();
                                 recent_expenses.iter().for_each(|e| month_stats.add(e));
                                 let _ = init_tx.send((lifetime_stats, month_stats, recent_expenses));

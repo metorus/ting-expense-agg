@@ -17,8 +17,8 @@ compile_error!("WASM application does not provide a expense-storing server.");
 #[cfg(feature = "server")] mod server;
 mod crosstyping;
 
-#[cfg(feature = "graphics_nowasm")] use remotehost::RemoteDatabase;
-#[cfg(feature = "graphics_wasm")] use remotehost_wasm::RemoteDatabase;
+#[cfg(all(feature = "graphics_wasm", not(feature = "selfhost")))] use remotehost_wasm::RemoteDatabase;
+#[cfg(all(feature = "graphics_nowasm", not(feature = "selfhost")))] use remotehost::RemoteDatabase;
 
 
 
