@@ -45,6 +45,7 @@ tokio-tungstenite = { version = "0.26.2", optional = true }
 totp-rs = { version = "5.7.0", features = ["gen_secret", "zeroize"], optional = true }
 tungstenite = { version = "0.26.2", optional = true }
 uuid = { version = "1.16.0", features = ["v4", "fast-rng", "macro-diagnostics", "serde", "v7"] }
+log = "0.4.27"
 
 [features]
 graphics_nowasm = ["dep:tungstenite", "dep:tokio-tungstenite", "graphics", "tokio/rt-multi-thread", "dep:reqwest"]
@@ -59,16 +60,11 @@ default  = []
 #   BUT IF SOMETHING ELSE enables jpeg-decoder itself
 # parallel = ["jpeg-decoder?/rayon"]
 
-
 [patch.crates-io]
 egui-winit = { path = "../egui/crates/egui-winit/" }  # fix UTF-8 event translation
 egui = { path = "../egui/crates/egui/" }
-cookie = { path = "../cookie-rs/" }                   # bump rand dependency 0.8 -> 0.9
+# cookie = { path = "../cookie-rs/" }                   # bump rand dependency 0.8 -> 0.9
 zbus = { path = "../zbus/zbus/" }                     # bump rand dependency 0.8 -> 0.9
-axum = { path = "../axum/axum/" }                     # bump tungstenite dependency 0.24.0 -> 0.26.2
+# axum = { path = "../axum/axum/" }                     # bump tungstenite dependency 0.24.0 -> 0.26.2
                                                       # (all about rand going from 0.8 to 0.9)
-atspi = { path = "../atspi/atspi/" }                  # bump zvariant
-                                                      # (still about rand going from 0.8 to 0.9)
-zbus_names = { path = "../zbus/zbus_names/" }         # for atspi usage
-atspi-common = { path = "../atspi/atspi-common/" }    # for accesskit_unix usage
 

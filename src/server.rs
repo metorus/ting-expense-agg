@@ -1,6 +1,6 @@
 use axum::extract::{State, Extension, Path, Request, ws::{CloseFrame, Message, close_code}};
 use axum_extra::extract::{cookie::{Key, Cookie, SameSite}, SignedCookieJar};
-use axum::{extract::WebSocketUpgrade, response::IntoResponse};
+use axum::{extract::WebSocketUpgrade, response::{IntoResponse, Html}};
 use axum::{routing::{get, post}, Router, RequestExt};
 use axum::middleware::map_request_with_state;
 use tokio::sync::broadcast::error::RecvError;
@@ -157,6 +157,10 @@ pub async fn handle_websocket(
 }
 
 
+/// Checks if a given value is eligible to be passed as a Handler.
+/// Reflects https://docs.rs/axum/latest/src/axum/handler/mod.rs.html#254-256
+fn check_handler<T>(_: &T) where T: IntoResponse + Clone + Send + Sync + 'static {}
+
 pub async fn serve_forever(bind_ip: &'static str, session_signing_key: Vec<u8>,
         root_key_out: Option<Sender<(&'static str, Vec<u8>)>>) {
     let db = Arc::new(MultiuserDb::mem_new());
@@ -167,8 +171,16 @@ pub async fn serve_forever(bind_ip: &'static str, session_signing_key: Vec<u8>,
         let _ = sender.send(("root", root_totp));
     }
     
-    let wasm_bundle = include_bytes!("./target/wasm32-unknown-unknown/release/ting-expense-a.wasm");
-    let index_bundle = include_bytes!("./assets/index.html");
+    
+    macro_rules! typed_load {
+        ($content_type:literal @ $target:literal) => {{
+            let header = [("Content-Type", $content_type)];
+            let content = include_bytes!($target);
+            let bundle = (header, content);
+            check_handler(&bundle);
+            get(bundle)
+        }}
+    }
     
     let app = Router::new()
         .route("/api/register/:device", post(register))
@@ -187,8 +199,10 @@ pub async fn serve_forever(bind_ip: &'static str, session_signing_key: Vec<u8>,
                 request.extensions_mut().insert(jar);
                 request
             }))
-        .route("/app.wasm", get(wasm_bundle))
-        .route("/", get(index_bundle));
+        .route("/ting-expense-a_bg.wasm", typed_load!("application/wasm" @ "../assets/ting-expense-a_bg.wasm"))
+        .route("/ting-expense-a.js", typed_load!("text/javascript" @ "../assets/ting-expense-a.js"))
+        .route("/icon-64.png", typed_load!("image/png" @ "../assets/icon-64.png"))
+        .route("/", typed_load!("text/html" @ "../assets/index.html"));
 
     let listener = TcpListener::bind(bind_ip).await.unwrap();
     axum::serve(listener, app).await.unwrap();

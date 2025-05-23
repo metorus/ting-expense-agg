@@ -27,7 +27,7 @@ fn main() {
     use wasm_bindgen_futures::spawn_local;
     
     spawn_local(async {
-        let db = RemoteDatabase::connect(todo!("url"), todo!("credentials")).await;
+        let db = RemoteDatabase::connect("", ()).await;
         graphics::run_app(db);
     });
 }
