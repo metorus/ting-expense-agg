@@ -2,19 +2,13 @@
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use wasm_bindgen_futures::JsFuture;
-use web_sys::{console, CloseEvent, Event, WebSocket};
+use web_sys::{console, CloseEvent, Event, MessageEvent, WebSocket};
 use web_sys::js_sys::{ArrayBuffer, Uint8Array};
 use postcard::{to_stdvec, from_bytes};
-use futures::{channel::mpsc, StreamExt, SinkExt};
+use futures::channel::mpsc;
 use std::sync::{Arc, Mutex};
 
 use crate::crosstyping::*;
-
-
-fn error_str() {
-    
-}
 
 
 pub struct RemoteDatabase {
@@ -33,7 +27,7 @@ impl RemoteDatabase {
         // Set up message handler
         let down_tx_clone = down_tx.clone();
         let init_tx_clone = init_data_tx.clone();
-        let onmessage_callback = Closure::wrap(Box::new(move |e: web_sys::MessageEvent| {
+        let onmessage_callback = Closure::wrap(Box::new(move |e: MessageEvent| {
             // Handle binary message
             if let Ok(abuf) = e.data().dyn_into::<ArrayBuffer>() {
                 let array = Uint8Array::new(&abuf);
@@ -58,21 +52,21 @@ impl RemoteDatabase {
                     }
                 }
             }
-        }) as Box<dyn FnMut(web_sys::MessageEvent)>);
+        }) as Box<dyn FnMut(MessageEvent)>);
         ws.set_onmessage(Some(onmessage_callback.as_ref().unchecked_ref()));
         onmessage_callback.forget();
         
         let onerror_callback = Closure::wrap(Box::new(move |e: Event| {
             console::error_2(&JsValue::from_str("WebSocket error: unknown"),
                              &e.into());
-        }));
+        }) as Box<dyn FnMut(Event)>);
         ws.set_onerror(Some(onerror_callback.as_ref().unchecked_ref()));
         onerror_callback.forget();
         
         let onclose_callback = Closure::wrap(Box::new(move |e: CloseEvent| {
             console::error_2(&JsValue::from_str("WebSocket error: connection closed"),
                              &e.into());
-        }) as Box<dyn FnMut(web_sys::CloseEvent)>);
+        }) as Box<dyn FnMut(CloseEvent)>);
         ws.set_onclose(Some(onclose_callback.as_ref().unchecked_ref()));
         onclose_callback.forget();
         

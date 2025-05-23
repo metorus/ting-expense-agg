@@ -167,6 +167,9 @@ pub async fn serve_forever(bind_ip: &'static str, session_signing_key: Vec<u8>,
         let _ = sender.send(("root", root_totp));
     }
     
+    let wasm_bundle = include_bytes!("./target/wasm32-unknown-unknown/release/ting-expense-a.wasm");
+    let index_bundle = include_bytes!("./assets/index.html");
+    
     let app = Router::new()
         .route("/api/register/:device", post(register))
         .route("/api/login/:device", post(login))
@@ -184,7 +187,8 @@ pub async fn serve_forever(bind_ip: &'static str, session_signing_key: Vec<u8>,
                 request.extensions_mut().insert(jar);
                 request
             }))
-        .route("/", get("Hello, World!"));
+        .route("/app.wasm", get(wasm_bundle))
+        .route("/", get(index_bundle));
 
     let listener = TcpListener::bind(bind_ip).await.unwrap();
     axum::serve(listener, app).await.unwrap();

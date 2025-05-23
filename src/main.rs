@@ -22,20 +22,30 @@ mod crosstyping;
 
 
 
-#[cfg(all(feature = "graphics", feature = "selfhost"))]
+#[cfg(feature = "graphics_wasm")]
+fn main() {
+    use wasm_bindgen_futures::spawn_local;
+    
+    spawn_local(async {
+        let db = RemoteDatabase::connect(todo!("url"), todo!("credentials")).await;
+        graphics::run_app(db);
+    });
+}
+
+#[cfg(all(feature = "graphics_nowasm", feature = "selfhost"))]
 fn main() {
     let db = selfhost::SingleUserSqlite::default();
     graphics::run_app(db).unwrap();
 }
 
-#[cfg(all(feature = "graphics", not(feature = "server"), not(feature = "selfhost")))]
+#[cfg(all(feature = "graphics_nowasm", not(feature = "server"), not(feature = "selfhost")))]
 #[tokio::main]
 async fn main() {
     let db = RemoteDatabase::connect(todo!("url"), todo!("credentials")).await;
     graphics::run_app(db);
 }
 
-#[cfg(all(feature = "graphics", feature = "server"))]
+#[cfg(all(feature = "graphics_nowasm", feature = "server"))]
 fn main() {
     env_logger::init();
     
