@@ -72,7 +72,8 @@ impl Upstream for SingleUserSqlite {
             },
             ServerboundUpdate::MadeExpense{info, temp_alias} => {
                 self.submit_expense(info, temp_alias);
-            }
+            },
+            ServerboundUpdate::QueryHistory{..} => {},
         }
     }
     
@@ -111,7 +112,8 @@ impl Upstream for PseudoUpstream {
             },
             ServerboundUpdate::MadeExpense{info, temp_alias} => {
                 self.uncommitted_expenses.push((info, temp_alias));
-            }
+            },
+            ServerboundUpdate::QueryHistory{..} => {},
         }
     }
     fn sync(&mut self) -> Vec<ClientboundUpdate> {

@@ -3,11 +3,10 @@
 
 use egui::{*, FontFamily::Proportional, FontId};
 use eframe::{App, CreationContext};
-
 use std::collections::BTreeMap;
 use std::sync::Arc;
+
 use crate::crosstyping::{ClientData, Upstream};
-use crate::db_slice::DbView;
 use crate::widgets::*;
 
 
@@ -58,6 +57,8 @@ impl Default for MainForm {
 
 
 enum CurScreen {
+    Connect,
+    SigningIn(Box<dyn Upstream + 'static>),
     Main(MainForm),
     Stats,
 }
@@ -68,21 +69,25 @@ enum UiCommands {
 }
 
 
-pub struct Trac<U: Upstream> {
-    db: DbView<U>,
+type DbView = crate::db_slice::DbView<Box<dyn Upstream + 'static>>;
+
+pub struct Trac {
+    db: Option<DbView>,
     screen_buf: Vec<CurScreen>,
 }
-impl<U: Upstream> Trac<U> {
-    pub fn new(cc: &CreationContext<'_>, db: U) -> Self {
+impl Trac {
+    pub fn new(cc: &CreationContext<'_>, db: impl Upstream + 'static) -> Self {
         cc.egui_ctx.set_theme(Theme::Light);
         
         let mut fonts = FontDefinitions::default();
-        let noto_bald = "NotoSansBold".to_string();
+        let noto_bold = "NotoSansBold".to_string();
         let noto_light = "NotoSansLight".to_string();
-        fonts.font_data.insert(noto_light.clone(), Arc::from(FontData::from_static(include_bytes!("../assets/NotoSans-Light.ttf"))));
-        fonts.font_data.insert(noto_bald.clone(), Arc::from(FontData::from_static(include_bytes!("../assets/NotoSans-Regular.ttf"))));
+        fonts.font_data.insert(noto_light.clone(),
+            Arc::from(FontData::from_static(include_bytes!("../assets/NotoSans-Light.ttf"))));
+        fonts.font_data.insert(noto_bold.clone(),
+            Arc::from(FontData::from_static(include_bytes!("../assets/NotoSans-Regular.ttf"))));
         fonts.families.get_mut(&FontFamily::Proportional).unwrap().push(noto_light.clone());
-        fonts.families.get_mut(&FontFamily::Monospace).unwrap().push(noto_bald.clone());
+        fonts.families.get_mut(&FontFamily::Monospace).unwrap().push(noto_bold.clone());
         
         cc.egui_ctx.set_fonts(fonts);
         
@@ -99,12 +104,13 @@ impl<U: Upstream> Trac<U> {
         cc.egui_ctx.all_styles_mut(move |style| style.text_styles = text_styles.clone());
         
         Trac {
-            db: DbView::with(db),
-            screen_buf: vec![CurScreen::Main(MainForm::default())],
+            db: None,
+            screen_buf: vec![CurScreen::SigningIn(Box::new(db))]
+            // screen_buf: vec![],
         }
     }
     
-    fn draw_main_screen(&mut self, ctx: &Context, form: &mut MainForm) -> Vec<UiCommands> {
+    fn draw_main_screen(db: &mut DbView, ctx: &Context, form: &mut MainForm) -> Vec<UiCommands> {
         let mut cmds = vec![];
         
         TopBottomPanel::bottom("status_bar")
@@ -160,7 +166,7 @@ impl<U: Upstream> Trac<U> {
                             CATEGORIES[form.chosen_category].2.map(|s| s.into())
                         };
                         
-                        self.db.insert_expense(ClientData{
+                        db.insert_expense(ClientData{
                             amount: form.spent,
                             group: c,
                             revoked: false,
@@ -169,7 +175,7 @@ impl<U: Upstream> Trac<U> {
                     }
                 });
             });
-        let (latte, latc) = self.db.month_transactions_info();
+        let (latte, latc) = db.month_transactions_info();
 
         CentralPanel::default()
             .frame(Frame::side_top_panel(&ctx.style())
@@ -187,14 +193,14 @@ impl<U: Upstream> Trac<U> {
                     }
                     ui.add_space(12.0);
                     
-                    self.db.load_last_spendings(6).for_each(|ml| show_spending_mayload(ui, ml));
+                    db.load_last_spendings(6).for_each(|ml| show_spending_mayload(ui, ml));
                 });
             });
         
         cmds
     }
     
-    fn draw_stat_screen(&mut self, ctx: &Context) -> Vec<UiCommands> {
+    fn draw_stat_screen(db: &mut DbView, ctx: &Context) -> Vec<UiCommands> {
         let mut cmds = vec![];
         
         TopBottomPanel::bottom("status_bar")
@@ -221,10 +227,10 @@ impl<U: Upstream> Trac<U> {
                     
                     pie_chart_with_legend(
                         ui,
-                        self.db.month_pie().into_iter()
-                               .map(|(group, value)| {
-                                   (group, *value as f32, color_cat(&group))
-                               })
+                        db.month_pie().into_iter()
+                          .map(|(group, value)| {
+                              (group, *value as f32, color_cat(&group))
+                          })
                     );
                     
                     // 2. displaying spendings
@@ -233,10 +239,10 @@ impl<U: Upstream> Trac<U> {
                     let text_height = ui.fonts(|r| r.row_height(&font));
                     
                     ScrollArea::vertical().show_rows(ui, text_height,
-                        self.db.total_live_transactions(),
+                        db.total_live_transactions(),
                         |ui, range| {
-                            self.db.load_some_spendings(range.start, range.end)
-                                .for_each(|ml| show_spending_mayload(ui, ml));
+                            db.load_some_spendings(range.start, range.end)
+                              .for_each(|ml| show_spending_mayload(ui, ml));
                         });
                 });
             });
@@ -245,7 +251,7 @@ impl<U: Upstream> Trac<U> {
     }
 }
 
-impl<U: Upstream> App for Trac<U> {
+impl App for Trac {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         // We can't enable double mutability on last-screen place,
         //     but we need &mut App (or to reference all OK fields separately),
@@ -253,14 +259,24 @@ impl<U: Upstream> App for Trac<U> {
         let commands = match self.screen_buf.pop() {
             None => unreachable!(),
             Some(CurScreen::Main(mut form)) => {
-                 let c = self.draw_main_screen(ctx, &mut form);
-                 self.screen_buf.push(CurScreen::Main(form));
-                 c
+                let c = Self::draw_main_screen(self.db.as_mut().unwrap(), ctx, &mut form);
+                self.screen_buf.push(CurScreen::Main(form));
+                c
             }
             Some(CurScreen::Stats) => {
-                 let c = self.draw_stat_screen(ctx);
-                 self.screen_buf.push(CurScreen::Stats);
-                 c
+                let c = Self::draw_stat_screen(self.db.as_mut().unwrap(), ctx);
+                self.screen_buf.push(CurScreen::Stats);
+                c
+            },
+            Some(CurScreen::Connect) => {
+                self.screen_buf.push(CurScreen::Connect);
+                vec![]
+            },
+            Some(CurScreen::SigningIn(db)) => {
+                self.db = Some(DbView::with(db));
+                self.screen_buf.push(CurScreen::Main(MainForm::default()));
+                ctx.request_discard("Sign-in completed, new draw required");
+                vec![]
             }
         };
         
@@ -280,7 +296,7 @@ impl<U: Upstream> App for Trac<U> {
 
 
 #[cfg(not(target_arch = "wasm32"))]
-pub fn run_app(db: impl Upstream) -> eframe::Result {
+pub fn run_app(db: impl Upstream + 'static) -> eframe::Result {
     let icon = include_bytes!("../assets/icon-32.png");
     
     let native_options = eframe::NativeOptions {
@@ -298,16 +314,10 @@ pub fn run_app(db: impl Upstream) -> eframe::Result {
     eframe::run_native(
         "ton.ting.ExpenseExplorer",
         native_options,
-        Box::new(|cc|
-                     {
-                        Ok(Box::new(Trac::new(cc, db)))
-                     }
-        ,
-    ))
-
-
-
-
+        Box::new(|creation_ctx| Ok(Box::new(
+            Trac::new(creation_ctx, db)
+        ))),
+    )
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -330,8 +340,8 @@ pub fn run_app(db: impl Upstream + 'static) {
             .start(
                 canvas,
                 web_options,
-                Box::new(|cc| Ok(Box::new(
-                    Trac::new(cc, db)
+                Box::new(|creation_ctx| Ok(Box::new(
+                    Trac::new(creation_ctx, db)
                 ))),
             )
             .await;

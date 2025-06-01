@@ -109,12 +109,15 @@ impl CachedStats {
 pub enum ClientboundUpdate {
     Revoked {expense: Expense},
     NewSpending {expense: Expense, temp_alias: Uuid},
-    InitStats {lifetime_stats: ((u64, usize), Vec<(String, u64)>), recent_expenses: Vec<Expense>}
+    InitStats {lifetime_stats: ((u64, usize), Vec<(String, u64)>), recent_expenses: Vec<Expense>},
+    // Must be adjacent to already-known ones.
+    RevealHistory {expenses: Vec<Expense>},
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum ServerboundUpdate {
     Revoked {expense_id: Uuid},
     MadeExpense {info: ClientData, temp_alias: Uuid},
+    QueryHistory {before: OffsetDateTime, amount: usize}
 }
 
 #[cfg(feature = "graphics")]
@@ -122,9 +125,24 @@ pub trait Upstream {
     fn submit(&mut self, d: ServerboundUpdate);
     fn sync(&mut self) -> Vec<ClientboundUpdate>;
     
-    /// Lifetime stats, month stats, at least month's worth of RECENTMOST
-    /// confirmed expenses.
+    /// Lifetime stats, month stats, at least month's worth of RECENTMOST confirmed expenses.
     fn take_init(&mut self) -> Option<(CachedStats, CachedStats, Vec<Expense>)>;
 }
 
+
+// Delegating to the box contents.
+impl<U: Upstream + ?Sized> Upstream for Box<U> {
+    fn submit(&mut self, d: ServerboundUpdate) {
+        let content: &mut U = &mut *self;
+        content.submit(d)
+    }
+    fn sync(&mut self) -> Vec<ClientboundUpdate> {
+        let content: &mut U = &mut *self;
+        content.sync()
+    }
+    fn take_init(&mut self) -> Option<(CachedStats, CachedStats, Vec<Expense>)> {
+        let content: &mut U = &mut *self;
+        content.take_init()
+    }
+}
 

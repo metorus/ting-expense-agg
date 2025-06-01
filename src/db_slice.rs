@@ -101,6 +101,14 @@ impl<U: Upstream> DbView<U> {
                 ClientboundUpdate::InitStats { .. } => {
                     // this message is not meant to us; we might do sanity checks, though
                 },
+                ClientboundUpdate::RevealHistory { expenses } => {
+                    for exp in expenses {
+                        self.live_records.insert(
+                            RecordViewKey::Confirmed(exp.server.time, exp.server.uid),
+                            RecordViewValue::Confirmed(exp));
+                    }
+                    // No stats change because those expenses were already accounted for.
+                }
             }
         }
     }
@@ -171,7 +179,7 @@ impl<U: Upstream> DbView<U> {
             .map(|(_k, r)| r.borrow());
         let missing = std::iter::repeat(MayLoad::NotLoaded)
             .take(total_records.saturating_sub(have_records));
-            
+        
         visible.chain(missing).take(n)
     }
 
