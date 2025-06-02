@@ -131,6 +131,7 @@ pub trait Upstream {
 
 
 // Delegating to the box contents.
+#[cfg(feature = "graphics")]
 impl<U: Upstream + ?Sized> Upstream for Box<U> {
     fn submit(&mut self, d: ServerboundUpdate) {
         let content: &mut U = &mut *self;

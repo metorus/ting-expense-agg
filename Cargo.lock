@@ -3942,6 +3942,7 @@ checksum = "8a7619e19bc266e0f9c5e6686659d394bc57973859340060a69221e57dbc0c40"
 dependencies = [
  "deranged",
  "itoa",
+ "js-sys",
  "libc",
  "num-conv",
  "num_threads",
@@ -3979,6 +3980,8 @@ dependencies = [
  "env_logger",
  "futures",
  "getrandom 0.3.3",
+ "hex",
+ "js-sys",
  "liquemap",
  "log",
  "postcard",

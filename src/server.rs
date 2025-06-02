@@ -134,9 +134,10 @@ pub async fn handle_websocket(
                 
                 if let Err(e) = match serverbound_req {
                     ServerboundUpdate::MadeExpense{info, temp_alias} =>
-                      db.submit_expense(&principal, info, temp_alias).await,
+                      db.submit_expense(&principal, info, temp_alias).await.map(|_| ()),
                     ServerboundUpdate::Revoked{expense_id} =>
-                      db.submit_revoke(&principal, expense_id).await
+                      db.submit_revoke(&principal, expense_id).await.map(|_| ()),
+                    ServerboundUpdate::QueryHistory { .. } => Ok(()),
                 } {
                     eprintln!("Database operation failed: {e:?}");
                     break close_code::ERROR

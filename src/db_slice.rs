@@ -7,6 +7,16 @@ use uuid::Uuid;
 use crate::crosstyping::*;
 
 
+#[cfg(not(feature = "graphics_wasm"))]
+pub fn now() -> OffsetDateTime {
+    OffsetDateTime::now_local().unwrap().replace_nanosecond(0).unwrap()
+}
+#[cfg(feature = "graphics_wasm")]
+pub fn now() -> OffsetDateTime {
+    js_sys::Date::new_0().into()
+}
+
+
 
 #[derive(Clone, Copy)]
 pub enum MayLoad<'a> {
@@ -62,9 +72,7 @@ impl<U: Upstream> DbView<U> {
     }
 
     fn keep_month(&mut self) -> OffsetDateTime {
-        let now = OffsetDateTime::now_local().unwrap()
-                                 .replace_nanosecond(0).unwrap();
-        let liveline = now - MONTH_LIKE;
+        let liveline = now() - MONTH_LIKE;
         
         while self.month_stats.records_alive > 0 {
             let expense_bottom_index = self.live_records.len() - self.month_stats.records_alive;
@@ -202,13 +210,20 @@ impl<U: Upstream> DbView<U> {
     pub fn insert_expense(&mut self, c: ClientData) {
         assert!(!c.revoked);
         
-        let now = OffsetDateTime::now_utc();
-        let temp_alias = Uuid::now_v7();
+        let t = now();
+        // let temp_alias = Uuid::now_v7();  <- no time facilities on WASM
+        let timestamp = uuid::Timestamp::from_unix_time(
+            t.unix_timestamp() as u64,
+            t.nanosecond(),
+            self.live_records.len() as u128,
+            20,
+        );
+        let temp_alias = Uuid::new_v7(timestamp);
         
         self.life_stats.raw_add(c.group.as_deref().unwrap_or(UNCLASSIFIED), c.amount as i64, 1);
         self.month_stats.raw_add(c.group.as_deref().unwrap_or(UNCLASSIFIED), c.amount as i64, 1);
         
-        self.live_records.insert(RecordViewKey::Provisional(temp_alias), RecordViewValue::Provisional(c.clone(), now));
+        self.live_records.insert(RecordViewKey::Provisional(temp_alias), RecordViewValue::Provisional(c.clone(), t));
         self.upstream.submit(ServerboundUpdate::MadeExpense {
             info: c,
             temp_alias,

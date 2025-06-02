@@ -57,10 +57,12 @@ totp-rs = { version = "5.7.0", features = ["gen_secret", "zeroize"], optional = 
 tungstenite = { version = "0.26.2", optional = true }
 uuid = { version = "1.16.0", features = ["v4", "fast-rng", "macro-diagnostics", "serde", "v7"] }
 log = "0.4.27"
+hex = "0.4.3"
+js-sys = { version = "0.3.77", optional = true }
 
 [features]
 graphics_nowasm = ["dep:tungstenite", "dep:tokio-tungstenite", "graphics", "tokio/rt-multi-thread", "dep:reqwest"]
-graphics_wasm = ["tokio/rt", "uuid/rng-getrandom", "getrandom/wasm_js", "graphics"]
+graphics_wasm = ["tokio/rt", "uuid/rng-getrandom", "getrandom/wasm_js", "graphics", "time/wasm-bindgen", "dep:js-sys"]
 server = ["dep:axum", "dep:axum-extra", "dep:rusqlite", "tokio/rt-multi-thread", "dep:totp-rs"]
 graphics = ["dep:eframe", "dep:egui"]
 selfhost = ["dep:rusqlite"]

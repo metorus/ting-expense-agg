@@ -124,9 +124,16 @@
     <script type="module">
         import __wbg_init from './ting-expense-a.js';
         
-        console.debug("Loading wasm...");
+        console.debug('Registering.');
         
-        __wbg_init({"module_or_path": "./ting-expense-a_bg.wasm"})
+        fetch('/api/register/device', {
+            method: 'POST',
+            body: 'first-user'
+        })
+            .then(_ => {
+                console.debug("Loading wasm...");
+                return __wbg_init({"module_or_path": "./ting-expense-a_bg.wasm"});
+            })
             .then((_image) => {
                 console.debug("Image started!");
                 console.debug("ting-expense-a/src/main.rs now runs everything.")
