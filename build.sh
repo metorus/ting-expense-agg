@@ -5,3 +5,4 @@ cargo build --release --target wasm32-unknown-unknown --features graphics_wasm
 echo === Server ===
 cargo build --release --features server
 
+e
